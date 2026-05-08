@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1d1a16;
+  --color-ink-2: #3a3530;
+  --color-muted: #8a8379;
+  --color-note: #6b6560;
+  --color-paper: #faf8f5;
+  --color-accent: #b8563e;
+  --color-hair: rgba(29, 26, 22, 0.18);
+  --color-hair-2: rgba(29, 26, 22, 0.1);
+  --color-fill: rgba(29, 26, 22, 0.04);
+  --color-fill-2: rgba(29, 26, 22, 0.08);
+
+  --font-display: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-hand: "Caveat", "Bradley Hand", "Segoe Print", cursive;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}

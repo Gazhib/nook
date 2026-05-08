@@ -1,0 +1,40 @@
+import { Piece } from "./useRoom";
+
+interface FurnitureProps {
+  type: string;
+  w: number;
+  h: number;
+  color: string;
+  onDragStart?: (e: React.DragEvent) => void;
+  onClick?: (piece: Piece) => void;
+}
+
+export const FurnitureTag = ({
+  type,
+  w,
+  h,
+  color,
+  onDragStart,
+  onClick,
+}: FurnitureProps) => {
+  return (
+    <div
+      draggable
+      // onDragStart={onDragStart}
+      onClick={() => onClick?.({ id: "", type, x: 0, y: 0, w, h, color })}
+      title={`${type} (${w}×${h})`}
+      className="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-fill-2 transition-colors group"
+    >
+      <div
+        className="shrink-0 rounded-sm border border-hair"
+        style={{ width: 20, height: 14, backgroundColor: color }}
+      />
+      <span className="font-body text-sm text-ink-2 group-hover:text-ink transition-colors">
+        {type}
+      </span>
+      <span className="ml-auto font-mono text-xs text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+        {w}×{h}
+      </span>
+    </div>
+  );
+};
