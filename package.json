@@ -1,0 +1,8 @@
+{
+  "name": "nook",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

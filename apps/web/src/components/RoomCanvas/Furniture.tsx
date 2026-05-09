@@ -2,12 +2,9 @@ import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
 import { Ref } from "react";
 import { Rect } from "react-konva";
 
-interface FurnitureProps {
-  type: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+import { FurnitureItem } from "@nook/shared";
+
+interface FurnitureProps extends FurnitureItem {
   onClick: () => void;
   color: string;
   isSelected?: boolean;
@@ -19,10 +16,9 @@ interface FurnitureProps {
 export const Furniture = ({
   type,
   onClick,
-  x,
-  y,
-  w,
-  h,
+  position: { x, y },
+  width,
+  height,
   color,
   isSelected = false,
   ref,
@@ -36,8 +32,8 @@ export const Furniture = ({
       onClick={onClick}
       x={x}
       y={y}
-      width={w}
-      height={h}
+      width={width}
+      height={height}
       fill={color}
       draggable
       stroke={"#C45A3C"}
