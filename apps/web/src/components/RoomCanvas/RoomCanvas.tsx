@@ -11,13 +11,14 @@ export const RoomCanvas = () => {
     pieces,
     selectedId,
     selectedPieceRef,
-    tranformRef,
+    transformRef,
     gridSize,
     addPiece,
     selectPiece,
     handleClickOutside,
     dragBoundFunc,
     transformSnapFunc,
+    onDragEnd,
   } = useRoom();
 
   return (
@@ -36,16 +37,18 @@ export const RoomCanvas = () => {
             return (
               <Furniture
                 onDragStart={() => selectPiece(piece.id)}
+                onDragEnd={onDragEnd}
                 dragBoundFunc={dragBoundFunc}
                 isSelected={selectedId === piece.id}
                 ref={selectedId === piece.id ? selectedPieceRef : null}
                 onClick={() => selectPiece(piece.id)}
                 key={piece.id}
+                
                 {...piece}
               />
             );
           })}
-          <Transformer ref={tranformRef} boundBoxFunc={transformSnapFunc} />
+          <Transformer ref={transformRef} boundBoxFunc={transformSnapFunc} />
         </Layer>
       </Stage>
     </div>

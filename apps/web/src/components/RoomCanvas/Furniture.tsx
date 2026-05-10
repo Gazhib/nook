@@ -1,8 +1,9 @@
 import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
-import { Ref } from "react";
+import { Ref, useEffect } from "react";
 import { Rect } from "react-konva";
 
 import { FurnitureItem } from "@nook/shared";
+import { KonvaEventObject } from "konva/lib/Node";
 
 interface FurnitureProps extends FurnitureItem {
   onClick: () => void;
@@ -11,6 +12,7 @@ interface FurnitureProps extends FurnitureItem {
   ref?: Ref<KonvaRect> | null;
   dragBoundFunc: (pos: { x: number; y: number }) => { x: number; y: number };
   onDragStart?: () => void;
+  onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
 }
 
 export const Furniture = ({
@@ -24,10 +26,12 @@ export const Furniture = ({
   ref,
   dragBoundFunc,
   onDragStart,
+  onDragEnd,
 }: FurnitureProps) => {
   return (
     <Rect
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       ref={ref}
       onClick={onClick}
       x={x}

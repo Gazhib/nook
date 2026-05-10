@@ -10,6 +10,7 @@ export interface FurnitureItem {
   rotation: number;
   width: number;
   height: number;
+  color: string;
 }
 
 export interface Room {

@@ -1,18 +1,18 @@
-import { Piece } from "./useRoom";
+import { FurnitureItem } from "@nook/shared";
 
 interface FurnitureProps {
   type: string;
-  w: number;
-  h: number;
+  width: number;
+  height: number;
   color: string;
   onDragStart?: (e: React.DragEvent) => void;
-  onClick?: (piece: Piece) => void;
+  onClick?: (piece: FurnitureItem) => void;
 }
 
 export const FurnitureTag = ({
   type,
-  w,
-  h,
+  width,
+  height,
   color,
   onDragStart,
   onClick,
@@ -21,8 +21,18 @@ export const FurnitureTag = ({
     <div
       draggable
       // onDragStart={onDragStart}
-      onClick={() => onClick?.({ id: "", type, x: 0, y: 0, w, h, color })}
-      title={`${type} (${w}×${h})`}
+      onClick={() =>
+        onClick?.({
+          id: "",
+          type,
+          position: { x: 0, y: 0 },
+          width,
+          height,
+          color,
+          rotation: 0,
+        })
+      }
+      title={`${type} (${width}×${height})`}
       className="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-fill-2 transition-colors group"
     >
       <div
@@ -33,7 +43,7 @@ export const FurnitureTag = ({
         {type}
       </span>
       <span className="ml-auto font-mono text-xs text-muted opacity-0 group-hover:opacity-100 transition-opacity">
-        {w}×{h}
+        {width}×{height}
       </span>
     </div>
   );
