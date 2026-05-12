@@ -13,18 +13,29 @@ export const RoomCanvas = () => {
     selectedPieceRef,
     transformRef,
     gridSize,
+    stageRef,
     addPiece,
     selectPiece,
     handleClickOutside,
     dragBoundFunc,
     transformSnapFunc,
     onDragEnd,
+    isPanning,
   } = useRoom();
 
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div
+      ref={containerRef}
+      className="w-full h-full"
+      style={{ cursor: isPanning ? "grab" : "default" }}
+    >
       <FurnitureSidebar addPiece={addPiece} />
-      <Stage width={size.width} height={size.height} className="bg-paper">
+      <Stage
+        ref={stageRef}
+        width={size.width}
+        height={size.height}
+        className="bg-paper"
+      >
         <Layer>
           <Rect
             onClick={handleClickOutside}
@@ -43,7 +54,6 @@ export const RoomCanvas = () => {
                 ref={selectedId === piece.id ? selectedPieceRef : null}
                 onClick={() => selectPiece(piece.id)}
                 key={piece.id}
-                
                 {...piece}
               />
             );

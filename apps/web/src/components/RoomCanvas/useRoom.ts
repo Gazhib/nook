@@ -5,7 +5,11 @@ import type {
   Box,
   Transformer as KonvaTransformer,
 } from "konva/lib/shapes/Transformer";
+import { Stage } from "konva/lib/Stage";
 import { useEffect, useRef, useState } from "react";
+
+import * as Y from "yjs";
+import { WebsocketProvider } from "y-websocket";
 
 export const useRoom = () => {
   const [size, setSize] = useState({ width: 800, height: 600 });
@@ -21,20 +25,9 @@ export const useRoom = () => {
   const gridSize = 30;
 
   const addPiece = (piece: FurnitureItem) => {
-    const newPieces = [
-      ...pieces,
-      {
-        ...piece,
-        id: crypto.randomUUID(),
-      },
-    ];
+    const newPiece = { ...piece, id: crypto.randomUUID() };
 
-    setPieces(newPieces);
-
-    const newHistory = [...history.slice(0, historyIndex + 1), newPieces];
-
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    ypiecesRef.current.set(newPiece.id, newPiece);
   };
 
   const selectPiece = (id: string) => {
@@ -67,83 +60,66 @@ export const useRoom = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Delete" && selectedId) {
-        
-        const newPieces = pieces.filter((piece) => piece.id !== selectedId);
-        const newHistory = [...history.slice(0, historyIndex + 1), newPieces];
-        setPieces(newPieces);
-        setHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
+        ypiecesRef.current.delete(selectedId);
 
         setSelectedId(null);
         selectedPieceRef.current = null;
         transformRef.current?.nodes([]);
       }
 
+      if (!selectedId) return;
+
       switch (e.key) {
-        case "ArrowUp":
+        case "ArrowUp": {
           e.preventDefault();
-          setPieces((prev) =>
-            prev.map((piece) =>
-              piece.id === selectedId
-                ? {
-                    ...piece,
-                    position: {
-                      x: piece.position.x,
-                      y: piece.position.y - 10,
-                    },
-                  }
-                : piece
-            )
-          );
+          const newPieceUp = ypiecesRef.current.get(selectedId);
+
+          ypiecesRef.current.set(newPieceUp.id, {
+            ...newPieceUp,
+            position: { ...newPieceUp.position, y: newPieceUp.position.y - 10 },
+          });
           break;
+        }
         case "ArrowDown":
-          e.preventDefault();
-          setPieces((prev) =>
-            prev.map((piece) =>
-              piece.id === selectedId
-                ? {
-                    ...piece,
-                    position: {
-                      x: piece.position.x,
-                      y: piece.position.y + 10,
-                    },
-                  }
-                : piece
-            )
-          );
+          {
+            e.preventDefault();
+            const newPieceDown = ypiecesRef.current.get(selectedId);
+
+            ypiecesRef.current.set(newPieceDown.id, {
+              ...newPieceDown,
+              position: {
+                ...newPieceDown.position,
+                y: newPieceDown.position.y + 10,
+              },
+            });
+          }
           break;
-        case "ArrowLeft":
+        case "ArrowLeft": {
           e.preventDefault();
-          setPieces((prev) =>
-            prev.map((piece) =>
-              piece.id === selectedId
-                ? {
-                    ...piece,
-                    position: {
-                      x: piece.position.x - 10,
-                      y: piece.position.y,
-                    },
-                  }
-                : piece
-            )
-          );
+          const newPieceLeft = ypiecesRef.current.get(selectedId);
+
+          ypiecesRef.current.set(newPieceLeft.id, {
+            ...newPieceLeft,
+            position: {
+              ...newPieceLeft.position,
+              x: newPieceLeft.position.x - 10,
+            },
+          });
           break;
-        case "ArrowRight":
+        }
+        case "ArrowRight": {
           e.preventDefault();
-          setPieces((prev) =>
-            prev.map((piece) =>
-              piece.id === selectedId
-                ? {
-                    ...piece,
-                    position: {
-                      x: piece.position.x + 10,
-                      y: piece.position.y,
-                    },
-                  }
-                : piece
-            )
-          );
+          const newPieceRight = ypiecesRef.current.get(selectedId);
+
+          ypiecesRef.current.set(newPieceRight.id, {
+            ...newPieceRight,
+            position: {
+              ...newPieceRight.position,
+              x: newPieceRight.position.x + 10,
+            },
+          });
           break;
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -163,23 +139,17 @@ export const useRoom = () => {
   };
 
   const onDragEnd = (e: KonvaEventObject<DragEvent>) => {
+    if (!selectedId) return;
+
     const newX = Math.round(e.target.x() / gridSize) * gridSize;
     const newY = Math.round(e.target.y() / gridSize) * gridSize;
 
-    const newPieces = pieces.map((piece) =>
-      piece.id === selectedId
-        ? {
-            ...piece,
-            position: { x: newX, y: newY },
-          }
-        : piece
-    );
+    const newPiece = {
+      ...ypiecesRef.current.get(selectedId),
+      position: { x: newX, y: newY },
+    };
 
-    setPieces(newPieces);
-    const newHistory = [...history.slice(0, historyIndex + 1), newPieces];
-
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    ypiecesRef.current.set(newPiece.id, newPiece);
   };
 
   const transformSnapFunc = (oldBox: Box, newBox: Box) => {
@@ -196,35 +166,127 @@ export const useRoom = () => {
     };
   };
 
-  const [history, setHistory] = useState<FurnitureItem[][]>([pieces ?? []]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  const stageRef = useRef<Stage>(null);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (!stageRef.current) return;
+      e.preventDefault();
+
+      const stage = stageRef.current;
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+
+      const oldScale = stage.scaleX();
+      const newScale = e.deltaY < 0 ? oldScale * 1.1 : oldScale / 1.1;
+
+      if (newScale < 0.5 || newScale > 3) return;
+
+      const canvasPoint = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+      };
+
+      stage.scale({ x: newScale, y: newScale });
+      stage.position({
+        x: pointer.x - canvasPoint.x * newScale,
+        y: pointer.y - canvasPoint.y * newScale,
+      });
+      stage.batchDraw();
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  const [isPanning, setIsPanning] = useState(false);
+  const isSpaceHeld = useRef(false);
+  const lastMousePos = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+      if (e.code === "Space" && !e.repeat) {
         e.preventDefault();
-        if (historyIndex > 0) {
-          setHistoryIndex((prev) => prev - 1);
-          setPieces(history[historyIndex - 1]);
-        }
-        setSelectedId(null);
-        selectedPieceRef.current = null;
-        transformRef.current?.nodes([]);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-        e.preventDefault();
-        if (historyIndex < history.length - 1) {
-          setHistoryIndex((prev) => prev + 1);
-          setPieces(history[historyIndex + 1]);
-        }
-        setSelectedId(null);
-        selectedPieceRef.current = null;
-        transformRef.current?.nodes([]);
+        isSpaceHeld.current = true;
+        setIsPanning(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        isSpaceHeld.current = false;
+        lastMousePos.current = null;
+        setIsPanning(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (isSpaceHeld.current) {
+        lastMousePos.current = { x: e.clientX, y: e.clientY };
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [history, historyIndex]);
+    const handleMouseMove = (e: MouseEvent) => {
+      if (
+        !isSpaceHeld.current ||
+        e.buttons !== 1 ||
+        !lastMousePos.current ||
+        !stageRef.current
+      )
+        return;
+
+      const dx = e.clientX - lastMousePos.current.x;
+      const dy = e.clientY - lastMousePos.current.y;
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+
+      const stage = stageRef.current;
+      stage.position({ x: stage.x() + dx, y: stage.y() + dy });
+      stage.batchDraw();
+    };
+
+    const handleMouseUp = () => {
+      lastMousePos.current = null;
+    };
+
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  const ypiecesRef = useRef<Y.Map<any>>(new Y.Map());
+
+  useEffect(() => {
+    const ydoc = new Y.Doc();
+    const provider = new WebsocketProvider(
+      "ws://localhost:1234",
+      "room_name",
+      ydoc
+    );
+
+    const yPieces = ydoc.getMap("pieces");
+    ypiecesRef.current = yPieces;
+
+    yPieces.observe(() => {
+      const newPieces: FurnitureItem[] = [];
+      yPieces.forEach((value, key) => {
+        newPieces.push(value as FurnitureItem);
+      });
+      setPieces(newPieces);
+    });
+  }, []);
+
   return {
     size,
     containerRef,
@@ -239,6 +301,7 @@ export const useRoom = () => {
     dragBoundFunc,
     transformSnapFunc,
     onDragEnd,
-    // history,
+    stageRef,
+    isPanning,
   };
 };
