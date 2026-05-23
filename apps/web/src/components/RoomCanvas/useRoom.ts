@@ -166,6 +166,33 @@ export const useRoom = () => {
     };
   };
 
+  const onTransformEnd = (e: KonvaEventObject<Event>) => {
+    if (!selectedId) return;
+
+    const node = e.target;
+    if (!node) return;
+
+    const newRotation = node.rotation();
+    const newWidth = node.width() * node.scaleX();
+    const newHeight = node.height() * node.scaleY();
+
+    const newX = Math.round(node.x() / gridSize) * gridSize;
+    const newY = Math.round(node.y() / gridSize) * gridSize;
+
+    const newPiece = {
+      ...ypiecesRef.current.get(selectedId),
+      rotation: newRotation,
+      width: newWidth,
+      height: newHeight,
+      position: { x: newX, y: newY },
+    };
+
+    ypiecesRef.current.set(newPiece.id, newPiece);
+
+    node.scaleX(1);
+    node.scaleY(1);
+  };
+
   const stageRef = useRef<Stage>(null);
 
   useEffect(() => {
@@ -303,5 +330,6 @@ export const useRoom = () => {
     onDragEnd,
     stageRef,
     isPanning,
+    onTransformEnd,
   };
 };

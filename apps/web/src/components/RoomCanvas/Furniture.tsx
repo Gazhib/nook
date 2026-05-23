@@ -13,6 +13,7 @@ interface FurnitureProps extends FurnitureItem {
   dragBoundFunc: (pos: { x: number; y: number }) => { x: number; y: number };
   onDragStart?: () => void;
   onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
+  onTransformEnd: (e: KonvaEventObject<Event>) => void;
 }
 
 export const Furniture = ({
@@ -27,9 +28,12 @@ export const Furniture = ({
   dragBoundFunc,
   onDragStart,
   onDragEnd,
+  onTransformEnd,
+  rotation,
 }: FurnitureProps) => {
   return (
     <Rect
+      onTransformEnd={onTransformEnd}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       ref={ref}
@@ -43,6 +47,7 @@ export const Furniture = ({
       stroke={"#C45A3C"}
       strokeWidth={isSelected ? 2 : 0}
       dragBoundFunc={dragBoundFunc}
+      rotation={rotation}
     />
   );
 };

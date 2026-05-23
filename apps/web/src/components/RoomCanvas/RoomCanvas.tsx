@@ -21,6 +21,7 @@ export const RoomCanvas = () => {
     transformSnapFunc,
     onDragEnd,
     isPanning,
+    onTransformEnd,
   } = useRoom();
 
   return (
@@ -49,6 +50,7 @@ export const RoomCanvas = () => {
               <Furniture
                 onDragStart={() => selectPiece(piece.id)}
                 onDragEnd={onDragEnd}
+                onTransformEnd={onTransformEnd}
                 dragBoundFunc={dragBoundFunc}
                 isSelected={selectedId === piece.id}
                 ref={selectedId === piece.id ? selectedPieceRef : null}
