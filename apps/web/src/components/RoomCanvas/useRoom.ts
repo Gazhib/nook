@@ -10,8 +10,42 @@ import { useEffect, useRef, useState } from "react";
 
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
+import { Awareness } from "y-protocols/awareness";
+
+type User = {
+  mousePos: {
+    x: number;
+    y: number;
+  };
+  color: string;
+  name: string;
+};
+
+export interface UsersAwareness {
+  clientId: number;
+  user: User;
+}
+
+const userNames = ["Batyr", "Alish", "Mon ceau", "Rusik"];
+
+const colors = [
+  "#30bced",
+  "#6eeb83",
+  "#ffbc42",
+  "#ecd444",
+  "#ee6352",
+  "#9ac2c9",
+  "#8acb88",
+  "#1be7ff",
+];
 
 export const useRoom = () => {
+  const randomNumber = Number((Math.random() * 10).toFixed()) % colors.length;
+
+  const color = colors[randomNumber];
+
+  const userName = userNames[randomNumber % userNames.length];
+
   const [size, setSize] = useState({ width: 800, height: 600 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -253,6 +287,25 @@ export const useRoom = () => {
     };
   }, []);
 
+  const [users, setUsers] = useState<UsersAwareness[]>([]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const mousePos = stageRef.current?.getRelativePointerPosition();
+      if (mousePos === null) return;
+      awarenessRef.current?.setLocalStateField("user", {
+        name: userName,
+        color,
+        mousePos,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       if (isSpaceHeld.current) {
@@ -294,6 +347,8 @@ export const useRoom = () => {
 
   const ypiecesRef = useRef<Y.Map<any>>(new Y.Map());
 
+  const awarenessRef = useRef<Awareness>(null);
+
   useEffect(() => {
     const ydoc = new Y.Doc();
     const provider = new WebsocketProvider(
@@ -301,6 +356,20 @@ export const useRoom = () => {
       "room_name",
       ydoc
     );
+
+    const awareness = provider.awareness;
+
+    awareness.on("change", (_changes: any) => {
+      const states = Array.from(awareness.getStates().entries())
+        .filter(([clientId]) => clientId !== awareness.clientID)
+        .map(([clientId, state]) => ({
+          clientId,
+          ...state,
+        })) as UsersAwareness[];
+      setUsers(states);
+    });
+
+    awarenessRef.current = awareness;
 
     const yPieces = ydoc.getMap("pieces");
     ypiecesRef.current = yPieces;
@@ -312,6 +381,11 @@ export const useRoom = () => {
       });
       setPieces(newPieces);
     });
+
+    return () => {
+      ydoc.destroy();
+      provider.destroy();
+    };
   }, []);
 
   return {
@@ -331,5 +405,6 @@ export const useRoom = () => {
     stageRef,
     isPanning,
     onTransformEnd,
+    users,
   };
 };

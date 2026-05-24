@@ -1,8 +1,9 @@
-import { Layer, Rect, Stage, Transformer } from "react-konva";
+import { Group, Layer, Rect, Stage, Transformer } from "react-konva";
 import { Furniture } from "./Furniture";
 import { FurnitureSidebar } from "./FurnitureSidebar";
 import { Grid } from "./Grid";
 import { useRoom } from "./useRoom";
+import { Cursor } from "./Cursor";
 
 export const RoomCanvas = () => {
   const {
@@ -22,6 +23,7 @@ export const RoomCanvas = () => {
     onDragEnd,
     isPanning,
     onTransformEnd,
+    users,
   } = useRoom();
 
   return (
@@ -60,6 +62,18 @@ export const RoomCanvas = () => {
               />
             );
           })}
+
+          {users.map((user) => {
+            return (
+              <Cursor
+                key={`${user.clientId}`}
+                position={user.user.mousePos}
+                color={user.user.color}
+                name={user.user.name}
+              />
+            );
+          })}
+
           <Transformer ref={transformRef} boundBoxFunc={transformSnapFunc} />
         </Layer>
       </Stage>
