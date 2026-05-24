@@ -16,9 +16,9 @@ const FURNITURE = [
 ];
 
 export const FurnitureSidebar = ({
-  addPiece,
+  addFurniture,
 }: {
-  addPiece: (piece: FurnitureItem) => void;
+  addFurniture: (piece: FurnitureItem) => void;
 }) => {
   return (
     <div className="fixed left-5 top-1/2 -translate-y-1/2 z-50 bg-paper border border-hair rounded-xl p-3 shadow-md flex flex-col gap-0.5 min-w-36">
@@ -26,7 +26,7 @@ export const FurnitureSidebar = ({
         Furniture
       </p>
       {FURNITURE.map((item) => (
-        <FurnitureTag onClick = {addPiece} key={item.type} {...item} />
+        <FurnitureTag onClick = {addFurniture} key={item.type} {...item} />
       ))}
     </div>
   );

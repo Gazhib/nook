@@ -1,30 +1,38 @@
-import { Group, Layer, Rect, Stage, Transformer } from "react-konva";
+import { Stage as StageType } from "konva/lib/Stage";
+import { useRef } from "react";
+import { Layer, Rect, Stage, Transformer } from "react-konva";
+import { Cursor } from "./Cursor";
 import { Furniture } from "./Furniture";
 import { FurnitureSidebar } from "./FurnitureSidebar";
 import { Grid } from "./Grid";
-import { useRoom } from "./useRoom";
-import { Cursor } from "./Cursor";
+import { useFurniture } from "./model/useFurniture";
+import { useViewPort } from "./model/useViewPort";
+import { useYjsRoom } from "./model/useYjsRoom";
+import { usePresence } from "./model/usePresence";
 
 export const RoomCanvas = () => {
+  const stageRef = useRef<StageType | null>(null);
+
+  const { yFurniture, users, awarenessRef } = useYjsRoom();
+
+  const { isPanning, size, containerRef } = useViewPort(stageRef);
+
+  usePresence(stageRef, awarenessRef);
+
   const {
-    containerRef,
-    size,
-    pieces,
-    selectedId,
-    selectedPieceRef,
-    transformRef,
-    gridSize,
-    stageRef,
-    addPiece,
-    selectPiece,
+    addFurniture,
     handleClickOutside,
-    dragBoundFunc,
+    selectFurniture,
+    transformRef,
+    selectedFurnitureRef,
     transformSnapFunc,
     onDragEnd,
-    isPanning,
     onTransformEnd,
-    users,
-  } = useRoom();
+    dragBoundFunc,
+    gridSize,
+    furnitures,
+    selectedId,
+  } = useFurniture(yFurniture);
 
   return (
     <div
@@ -32,7 +40,7 @@ export const RoomCanvas = () => {
       className="w-full h-full"
       style={{ cursor: isPanning ? "grab" : "default" }}
     >
-      <FurnitureSidebar addPiece={addPiece} />
+      <FurnitureSidebar addFurniture={addFurniture} />
       <Stage
         ref={stageRef}
         width={size.width}
@@ -47,18 +55,18 @@ export const RoomCanvas = () => {
             className="bg-paper"
           />
           <Grid gridSize={gridSize} width={size.width} height={size.height} />
-          {pieces.map((piece) => {
+          {furnitures.map((furniture) => {
             return (
               <Furniture
-                onDragStart={() => selectPiece(piece.id)}
+                onDragStart={() => selectFurniture(furniture.id)}
                 onDragEnd={onDragEnd}
                 onTransformEnd={onTransformEnd}
                 dragBoundFunc={dragBoundFunc}
-                isSelected={selectedId === piece.id}
-                ref={selectedId === piece.id ? selectedPieceRef : null}
-                onClick={() => selectPiece(piece.id)}
-                key={piece.id}
-                {...piece}
+                isSelected={selectedId === furniture.id}
+                ref={selectedId === furniture.id ? selectedFurnitureRef : null}
+                onClick={() => selectFurniture(furniture.id)}
+                key={furniture.id}
+                {...furniture}
               />
             );
           })}

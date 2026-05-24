@@ -24,3 +24,17 @@ export interface UserPresence {
   cursor: Vec2 | null;
   selectedIds: string[];
 }
+
+type User = {
+  mousePos: {
+    x: number;
+    y: number;
+  };
+  color: string;
+  name: string;
+};
+
+export interface UsersAwareness {
+  clientId: number;
+  user: User;
+}
