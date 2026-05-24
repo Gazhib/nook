@@ -5,9 +5,11 @@ import type {
   Box,
   Transformer as KonvaTransformer,
 } from "konva/lib/shapes/Transformer";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import * as Y from "yjs";
+
+const LOCAL_ORIGIN = Symbol("local");
 
 export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
   const [furnitures, setFurnitures] = useState<FurnitureItem[]>([]);
@@ -19,10 +21,17 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
 
   const gridSize = 30;
 
+  const ydoc = yFurniture.doc;
+
+  const mutateYFurniture = (newFurniture: FurnitureItem) => {
+    ydoc?.transact(() => {
+      yFurniture.set(newFurniture.id, newFurniture);
+    }, LOCAL_ORIGIN);
+  };
+
   const addFurniture = (furniture: FurnitureItem) => {
     const newFurniture = { ...furniture, id: crypto.randomUUID() };
-
-    yFurniture.set(newFurniture.id, newFurniture);
+    mutateYFurniture(newFurniture);
   };
 
   const selectFurniture = (id: string) => {
@@ -34,13 +43,15 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
 
     if (!id || !movedFurniture) return;
 
-    yFurniture.set(id, {
+    const newFurniture = {
       ...movedFurniture,
       position: {
         x: movedFurniture.position.x + dx,
         y: movedFurniture.position.y + dy,
       },
-    });
+    };
+
+    mutateYFurniture(newFurniture);
   };
 
   const onTransformEnd = (e: KonvaEventObject<Event>) => {
@@ -56,7 +67,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
     const newX = Math.round(node.x() / gridSize) * gridSize;
     const newY = Math.round(node.y() / gridSize) * gridSize;
 
-    const newPiece = {
+    const newFurniture = {
       ...(yFurniture.get(selectedId) as FurnitureItem),
       rotation: newRotation,
       width: newWidth,
@@ -64,7 +75,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
       position: { x: newX, y: newY },
     };
 
-    yFurniture.set(selectedId, newPiece);
+    mutateYFurniture(newFurniture);
 
     node.scaleX(1);
     node.scaleY(1);
@@ -82,12 +93,12 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
 
     if (!selectedId) return;
 
-    const newPiece = {
+    const newFurniture = {
       ...(yFurniture.get(selectedId) as FurnitureItem),
       position: { x: newX, y: newY },
     };
 
-    yFurniture.set(selectedId, newPiece);
+    mutateYFurniture(newFurniture);
   };
 
   const transformSnapFunc = (oldBox: Box, newBox: Box) => {
@@ -114,7 +125,9 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Delete" && selectedId) {
-        yFurniture.delete(selectedId);
+        ydoc?.transact(() => {
+          yFurniture.delete(selectedId);
+        }, LOCAL_ORIGIN);
 
         setSelectedId(null);
         selectedFurnitureRef.current = null;
@@ -163,6 +176,26 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
     return () => {
       yFurniture.unobserve(sync);
     };
+  }, []);
+
+  const undoManager = useMemo(
+    () =>
+      new Y.UndoManager(yFurniture, {
+        trackedOrigins: new Set([LOCAL_ORIGIN]),
+      }),
+    [yFurniture]
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && (e.key === "z" || e.key === "Z")) {
+        undoManager.undo();
+      } else if (e.ctrlKey && (e.key === "y" || e.key === "Y")) {
+        undoManager.redo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleClickOutside = () => {
