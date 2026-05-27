@@ -6,7 +6,15 @@
     "packages/*"
   ],
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.21.0",
     "y-websocket": "^3.0.0",
     "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "@types/ws": "^8.18.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.22.3"
   }
 }
