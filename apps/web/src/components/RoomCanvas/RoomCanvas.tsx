@@ -1,5 +1,5 @@
 import { Stage as StageType } from "konva/lib/Stage";
-import { useRef } from "react";
+import { use, useRef } from "react";
 import { Layer, Rect, Stage, Transformer } from "react-konva";
 import { Cursor } from "./Cursor";
 import { Furniture } from "./Furniture";
@@ -10,10 +10,12 @@ import { useViewPort } from "./model/useViewPort";
 import { useYjsRoom } from "./model/useYjsRoom";
 import { usePresence } from "./model/usePresence";
 
-export const RoomCanvas = () => {
+export const RoomCanvas = ({ roomId }: { roomId: string }) => {
   const stageRef = useRef<StageType | null>(null);
 
-  const { yFurniture, users, awarenessRef } = useYjsRoom();
+  const { yFurniture, users, awarenessRef, saveNewSnapshot } = useYjsRoom({
+    roomId: Number(roomId),
+  });
 
   const { isPanning, size, containerRef } = useViewPort(stageRef);
 
@@ -85,6 +87,15 @@ export const RoomCanvas = () => {
           <Transformer ref={transformRef} boundBoxFunc={transformSnapFunc} />
         </Layer>
       </Stage>
+
+      <div className="fixed right-5 top-1/2 -translate-y-1/2 z-50 bg-paper border border-hair rounded-xl p-3 shadow-md flex flex-col gap-0.5 min-w-36">
+        <button
+          onClick={() => saveNewSnapshot(Number(roomId))}
+          className="font-display text-xs font-semibold text-muted uppercase tracking-widest px-2 pb-2 border-b border-hair-2 mb-1"
+        >
+          Add snapshot
+        </button>
+      </div>
     </div>
   );
 };

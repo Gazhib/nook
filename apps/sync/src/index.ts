@@ -4,6 +4,17 @@ import "./loadEnv";
 
 const app = new Hono();
 
+app.use(
+  "/*",
+  cors({
+    origin: "http://localhost:3000",
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    // credentials: true,
+    maxAge: 86400,
+  })
+);
+
 import { IncomingMessage } from "http";
 import * as decoding from "lib0/decoding";
 import * as encoding from "lib0/encoding";
@@ -16,6 +27,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { authRoutes } from "./routes/authRoutes";
 import { roomRoutes } from "./routes/roomRoutes";
 import { userRoutes } from "./routes/userRoutes";
+import { cors } from "hono/cors";
 
 export const db = drizzle(process.env.DATABASE_URL!);
 
@@ -72,6 +84,14 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     }
   });
 
+  ws.on("error", (err) => {
+    if (err.cause === "ECONNRESET") {
+      console.log("Connection closed");
+    } else {
+      console.log(err);
+    }
+  });
+
   ws.on("close", () => conns.delete(ws));
 
   // send initial sync
@@ -81,13 +101,7 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   ws.send(encoding.toUint8Array(encoder));
 });
 
-wss.on("error", (err) => {
-  if (err.cause === "ECONNRESET") {
-    console.log("Connection closed");
-  } else {
-    console.log(err);
-  }
-});
+
 
 const customErrorNames = new Set(["NotFoundError", "RoomError", "UserError"]);
 

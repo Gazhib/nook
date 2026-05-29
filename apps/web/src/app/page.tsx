@@ -1,9 +1,19 @@
+"use client";
+
 import { SketchButton } from "@/components/Button";
 import { Wordmark } from "@/components/Logo";
 import { TopDownRoom } from "@/components/TopDownRoom";
-import Link from "next/link";
+import { createRoomService } from "@/services/roomServices";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleStartRoom = async () => {
+    const roomId = await createRoomService();
+    router.push(`/room/${roomId}`);
+  };
+
   return (
     <main className="bg-paper relative box-border flex min-h-screen w-screen flex-col px-[40px] py-[32px]">
       <div className="mb-14 flex items-center justify-between">
@@ -28,7 +38,7 @@ export default function Home() {
 
         <div className="mt-8 inline-flex gap-[10px]">
           <SketchButton primary className="px-4 py-3">
-            <Link href={"/room"}>Start a room →</Link>
+            <button className="h-full w-full cursor-pointer" onClick={handleStartRoom}>Start a room →</button>
           </SketchButton>
           <SketchButton ghost className="px-4 py-3">
             See it work

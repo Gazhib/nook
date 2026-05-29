@@ -1,6 +1,7 @@
+import { desc, eq } from "drizzle-orm";
 import { db } from "..";
 import { RoomError } from "../errors";
-import { rooms } from "../schemas";
+import { room_snapshots, rooms } from "../schemas";
 
 export const roomRepository = {
   async createRoom(ownerId: number) {
@@ -14,5 +15,32 @@ export const roomRepository = {
     if (!newRoom) throw new RoomError("Could not create a Room");
 
     return newRoom.id;
+  },
+
+  async getRoomInfo(roomId: number) {
+    const [room] = await db
+      .select()
+      .from(rooms)
+      .where(eq(rooms.id, roomId))
+      .limit(1);
+
+    if (!room) throw new RoomError("Could not find a Room");
+
+    return room;
+  },
+
+  async getRoomSnapshot(roomId: number) {
+    const [roomSnapshot] = await db
+      .select()
+      .from(room_snapshots)
+      .where(eq(room_snapshots.roomId, roomId))
+      .orderBy(desc(room_snapshots.createdAt))
+      .limit(1);
+
+    return roomSnapshot;
+  },
+
+  async setRoomSnapshot(roomId: number, state: Buffer) {
+    await db.insert(room_snapshots).values({ roomId, state });
   },
 };

@@ -1,5 +1,5 @@
 import { UserError } from "../errors";
-import { userRepository } from "../repositories/UserRepository";
+import { userRepository } from "../repositories/userRepository";
 
 export const userService = {
   async findUserById(userId: number) {
