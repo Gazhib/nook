@@ -25,10 +25,11 @@ export const useYjsRoom = ({ roomId }: { roomId: number }) => {
     const getRoomState = async () => {
       const res = await getRoomStateService(roomId);
 
-      const neededState = new Uint8Array(res.roomSnapshot.state.data);
+      if (res?.roomSnapshot.state) {
+        const neededState = new Uint8Array(res.roomSnapshot.state.data);
 
-
-      if (res?.roomSnapshot.state) Y.applyUpdate(ydoc, neededState);
+        Y.applyUpdate(ydoc, neededState);
+      }
     };
 
     getRoomState();
@@ -37,7 +38,7 @@ export const useYjsRoom = ({ roomId }: { roomId: number }) => {
   useEffect(() => {
     const provider = new WebsocketProvider(
       "ws://localhost:1234",
-      "room_name",
+      roomId.toString(),
       ydoc
     );
 

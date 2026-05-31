@@ -1,7 +1,11 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, notInArray } from "drizzle-orm";
 import { db } from "..";
 import { RoomError } from "../errors";
 import { room_snapshots, rooms } from "../schemas";
+
+type Executor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+const MAX_SNAPSHOTS_PER_ROOM = 10;
 
 export const roomRepository = {
   async createRoom(ownerId: number) {
@@ -40,7 +44,30 @@ export const roomRepository = {
     return roomSnapshot;
   },
 
+  async pruneSnapshots(roomId: number, executor: Executor = db) {
+    const keep = await executor
+      .select({ id: room_snapshots.id })
+      .from(room_snapshots)
+      .where(eq(room_snapshots.roomId, roomId))
+      .orderBy(desc(room_snapshots.createdAt))
+      .limit(MAX_SNAPSHOTS_PER_ROOM);
+
+    const keepIds = keep.map((r) => r.id);
+
+    await executor
+      .delete(room_snapshots)
+      .where(
+        and(
+          eq(room_snapshots.roomId, roomId),
+          notInArray(room_snapshots.id, keepIds)
+        )
+      );
+  },
+
   async setRoomSnapshot(roomId: number, state: Buffer) {
-    await db.insert(room_snapshots).values({ roomId, state });
+    await db.transaction(async (tx) => {
+      await tx.insert(room_snapshots).values({ roomId, state });
+      await this.pruneSnapshots(roomId, tx);
+    });
   },
 };

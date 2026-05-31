@@ -1,3 +1,4 @@
+import { Room } from "@nook/shared";
 import { client } from "./client";
 
 interface CreateRoomProps {
@@ -10,10 +11,24 @@ export const createRoomService = async () => {
   return res.roomId;
 };
 
-interface GetRoomProps {}
+type RoomSnapshot = {
+  createdAt: string;
+  id: number;
+  roomId: number;
+  state: {
+    data: number[];
+    type: string;
+  };
+};
+
+interface GetRoomProps {
+  message: string;
+  room: Room;
+  roomSnapshot: RoomSnapshot;
+}
 
 export const getRoomStateService = async (roomId: number) => {
-  const res = await client.get(`/rooms/${roomId}`);
+  const res = await client.get<GetRoomProps>(`/rooms/${roomId}`);
 
   console.log(res);
 

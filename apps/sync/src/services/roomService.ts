@@ -1,3 +1,4 @@
+import { db } from "..";
 import { roomRepository } from "../repositories/roomRepository";
 
 export const roomService = {

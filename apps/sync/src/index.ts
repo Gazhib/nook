@@ -16,74 +16,38 @@ app.use(
 );
 
 import { IncomingMessage } from "http";
-import * as decoding from "lib0/decoding";
 import * as encoding from "lib0/encoding";
 import { RawData, WebSocket, WebSocketServer } from "ws";
-import * as awarenessProtocol from "y-protocols/awareness";
 import * as syncProtocol from "y-protocols/sync";
-import * as Y from "yjs";
 
 import { drizzle } from "drizzle-orm/node-postgres";
+import { cors } from "hono/cors";
 import { authRoutes } from "./routes/authRoutes";
 import { roomRoutes } from "./routes/roomRoutes";
 import { userRoutes } from "./routes/userRoutes";
-import { cors } from "hono/cors";
+import { YJScontroller } from "./ws/controllers/YJScontroller";
+import { getDoc } from "./ws/model/YJSmodel";
+import { WsRoomService } from "./ws/services/wsRoomService";
 
 export const db = drizzle(process.env.DATABASE_URL!);
-
 const wss = new WebSocketServer({ noServer: true });
-const docs = new Map();
-
-const getDoc = (name: string) => {
-  if (!docs.has(name)) {
-    const doc = new Y.Doc();
-    docs.set(name, {
-      doc,
-      awareness: new awarenessProtocol.Awareness(doc),
-      conns: new Set(),
-    });
-  }
-  return docs.get(name);
-};
 
 wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
-  const roomName = req.url?.slice(1);
-
-  if (!roomName) {
+  const roomId = req.url?.slice(1).split("?")[0];
+  if (!roomId) {
     return;
   }
 
-  const { doc, awareness, conns } = getDoc(roomName);
+  const room = getDoc(roomId);
+  const { doc, awareness, conns } = room;
   conns.add(ws);
 
-  ws.on("message", (message: RawData) => {
-    const buffers = Array.isArray(message)
-      ? message
-      : message instanceof ArrayBuffer
-      ? [Buffer.from(message)]
-      : [message];
+  WsRoomService.cancelEviction(room);
+  WsRoomService.startSaveInterval(roomId, room);
 
-    const decoder = decoding.createDecoder(
-      new Uint8Array(Buffer.concat(buffers))
-    );
-    const encoder = encoding.createEncoder();
-    const messageType = decoding.readVarUint(decoder);
-
-    if (messageType === 0) {
-      // sync
-      encoding.writeVarUint(encoder, 0);
-      syncProtocol.readSyncMessage(decoder, encoder, doc, null);
-      if (encoding.length(encoder) > 1) ws.send(encoding.toUint8Array(encoder));
-    } else if (messageType === 1) {
-      // awareness
-      awarenessProtocol.applyAwarenessUpdate(
-        awareness,
-        decoding.readVarUint8Array(decoder),
-        ws
-      );
-    }
-  });
-
+  ws.on("message", (message: RawData) =>
+    YJScontroller.handleMessage(message, doc, ws, awareness)
+  );
   ws.on("error", (err) => {
     if (err.cause === "ECONNRESET") {
       console.log("Connection closed");
@@ -91,17 +55,19 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
       console.log(err);
     }
   });
-
-  ws.on("close", () => conns.delete(ws));
-
+  ws.on("close", () => {
+    conns.delete(ws);
+    if (conns.size === 0) {
+      WsRoomService.saveSnapshot(roomId, room);
+      WsRoomService.scheduleEviction(roomId, room);
+    }
+  });
   // send initial sync
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, 0);
   syncProtocol.writeSyncStep1(encoder, doc);
   ws.send(encoding.toUint8Array(encoder));
 });
-
-
 
 const customErrorNames = new Set(["NotFoundError", "RoomError", "UserError"]);
 
@@ -120,6 +86,18 @@ app.route("/rooms", roomRoutes);
 app.route("/users", userRoutes);
 app.route("/auth", authRoutes);
 
-serve({ fetch: app.fetch, port: 1234, websocket: { server: wss } }, () => {
+const server = serve({ fetch: app.fetch, port: 1234 }, () => {
   console.log("Server is running on 1234");
+});
+
+server.on("upgrade", (req, socket, head) => {
+  const roomId = req.url?.slice(1).split("?")[0];
+  if (!roomId) {
+    socket.destroy();
+    return;
+  }
+
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit("connection", ws, req);
+  });
 });
