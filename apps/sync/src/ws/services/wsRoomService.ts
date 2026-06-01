@@ -15,7 +15,7 @@ export const WsRoomService = {
     try {
       const update = encodeStateAsUpdate(room.doc);
       const state = Buffer.from(update);
-      await roomRepository.setRoomSnapshot(Number(roomId), state);
+      await roomRepository.setRoomSnapshot(roomId, state);
       room.dirty = false;
     } finally {
       room.saving = false;

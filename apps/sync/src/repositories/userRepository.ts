@@ -4,7 +4,7 @@ import { users } from "../schemas";
 import { NotFoundError, UserError } from "../errors";
 
 export const userRepository = {
-  async findUserById(ownerId: number) {
+  async findUserById(ownerId: string) {
     const [user] = await db
       .select()
       .from(users)

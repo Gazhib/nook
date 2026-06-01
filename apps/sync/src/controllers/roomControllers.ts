@@ -1,14 +1,18 @@
 import { Context } from "hono";
+import { RoomError } from "../errors";
 import { roomService } from "../services/roomService";
-import { userService } from "../services/userService";
+import { HTTPException } from "hono/http-exception";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const roomControllers = {
   async createRoom(c: Context) {
-    const ownerId = 1;
+    const ownerId = "8988ca3c-053c-4009-80a7-c11fb10a3a8a";
 
-    // get ownerId from httponlycookie
+    // get ownerId from jwt
 
-    if (!Number.isInteger(ownerId) || ownerId < 1) {
+    if (!ownerId || ownerId.trim() === "") {
       return c.json({ error: "Invalid ownerId" }, 400);
     }
 
@@ -20,19 +24,33 @@ export const roomControllers = {
   },
 
   async getRoomInfo(c: Context) {
-    const roomId = Number(c.req.param("roomId"));
+    const roomId = c.req.param("roomId");
 
-    // get ownerId from httponlycookie and check whether they are equal
+    // dont forget get ownerId from httponlycookie and check whether they are equal
 
-    if (!Number.isInteger(roomId) || roomId < 1 || !roomId) {
+    const userId = "8988ca3c-053c-4009-80a7-c11fb10a3a8a";
+
+    if (!roomId || roomId.trim() === "") {
       return c.json({ error: "Invalid roomId" }, 400);
+    }
+
+    if (!UUID_REGEX.test(roomId)) {
+      throw new RoomError("Room not found");
+    }
+
+    const role = roomService.getRoomAccess(roomId, userId);
+
+    if (role === null) {
+      throw new HTTPException(404, {
+        message: "You have no access to the room",
+      });
     }
 
     const room = await roomService.getRoomInfo(roomId);
     const roomSnapshot = await roomService.getRoomSnapshot(roomId);
 
     return c.json(
-      { message: "Room found successfully", room, roomSnapshot },
+      { message: "Room found successfully", room, roomSnapshot, role },
       200
     );
   },
@@ -40,11 +58,36 @@ export const roomControllers = {
   async setRoomSnapshot(c: Context) {
     const { roomId, state } = await c.req.json();
 
+    if (!UUID_REGEX.test(roomId)) {
+      throw new RoomError("Room not found");
+    }
+
     await roomService.setRoomSnapshot(roomId, Buffer.from(state, "base64"));
 
-    return c.json(
-      { message: "Room snapshot saved successfully" },
-      200
-    );
+    return c.json({ message: "Room snapshot saved successfully" }, 200);
+  },
+
+  async getRoomAccess(c: Context) {
+    const roomId = await c.req.param("roomId");
+
+    // dont forget to pick userId from jwt
+
+    const userId = "8988ca3c-053c-4009-80a7-c11fb10a3a8a";
+
+    if (!roomId || roomId.trim() === "") {
+      return c.json({ error: "Invalid roomId" }, 400);
+    }
+
+    if (!UUID_REGEX.test(roomId)) {
+      throw new RoomError("Room not found");
+    }
+
+    const role = await roomService.getRoomAccess(roomId, userId);
+
+    if (role === null) {
+      return c.json({ message: "You have no access to the room" }, 404);
+    }
+
+    return c.json({ role, message: "Your role" }, 200);
   },
 };

@@ -1,5 +1,5 @@
 import { Room } from "@nook/shared";
-import { client } from "./client";
+import { ApiError, client } from "./client";
 
 interface CreateRoomProps {
   roomId: string;
@@ -14,7 +14,7 @@ export const createRoomService = async () => {
 type RoomSnapshot = {
   createdAt: string;
   id: number;
-  roomId: number;
+  roomId: string;
   state: {
     data: number[];
     type: string;
@@ -27,15 +27,17 @@ interface GetRoomProps {
   roomSnapshot: RoomSnapshot;
 }
 
-export const getRoomStateService = async (roomId: number) => {
-  const res = await client.get<GetRoomProps>(`/rooms/${roomId}`);
+export const getRoomStateService = async (roomId: string) => {
+  try {
+    const res = await client.get<GetRoomProps>(`/rooms/${roomId}`);
 
-  console.log(res);
-
-  return res;
+    return res;
+  } catch (err) {
+    throw err;
+  }
 };
 
-export const saveRoomStateService = async (roomId: number, state: Buffer) => {
+export const saveRoomStateService = async (roomId: string, state: Buffer) => {
   await client.post("/rooms/room_snapshot", {
     roomId,
     state: state.toString("base64"),

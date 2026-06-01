@@ -1,14 +1,14 @@
 import { and, desc, eq, notInArray } from "drizzle-orm";
 import { db } from "..";
 import { RoomError } from "../errors";
-import { room_snapshots, rooms } from "../schemas";
+import { room_snapshots, roomMembers, rooms, users } from "../schemas";
 
 type Executor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const MAX_SNAPSHOTS_PER_ROOM = 10;
 
 export const roomRepository = {
-  async createRoom(ownerId: number) {
+  async createRoom(ownerId: string) {
     const [newRoom] = await db
       .insert(rooms)
       .values({
@@ -21,7 +21,7 @@ export const roomRepository = {
     return newRoom.id;
   },
 
-  async getRoomInfo(roomId: number) {
+  async getRoomInfo(roomId: string) {
     const [room] = await db
       .select()
       .from(rooms)
@@ -33,7 +33,7 @@ export const roomRepository = {
     return room;
   },
 
-  async getRoomSnapshot(roomId: number) {
+  async getRoomSnapshot(roomId: string) {
     const [roomSnapshot] = await db
       .select()
       .from(room_snapshots)
@@ -44,7 +44,7 @@ export const roomRepository = {
     return roomSnapshot;
   },
 
-  async pruneSnapshots(roomId: number, executor: Executor = db) {
+  async pruneSnapshots(roomId: string, executor: Executor = db) {
     const keep = await executor
       .select({ id: room_snapshots.id })
       .from(room_snapshots)
@@ -64,10 +64,19 @@ export const roomRepository = {
       );
   },
 
-  async setRoomSnapshot(roomId: number, state: Buffer) {
+  async setRoomSnapshot(roomId: string, state: Buffer) {
     await db.transaction(async (tx) => {
       await tx.insert(room_snapshots).values({ roomId, state });
       await this.pruneSnapshots(roomId, tx);
     });
+  },
+
+  async getRoomAccess(roomId: string, userId: string) {
+    const member = await db.query.roomMembers.findFirst({
+      where: and(eq(roomMembers.roomId, roomId), eq(users.id, userId)),
+      columns: { role: true },
+    });
+
+    return member?.role ?? null;
   },
 };

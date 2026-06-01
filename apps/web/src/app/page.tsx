@@ -15,7 +15,7 @@ export default function Home() {
   };
 
   return (
-    <main className="bg-paper relative box-border flex min-h-screen w-screen flex-col px-[40px] py-[32px]">
+    <main className="bg-paper relative box-border flex min-h-screen max-w-screen flex-col px-[40px] py-[32px]">
       <div className="mb-14 flex items-center justify-between">
         <Wordmark size={22} />
         <div className="font-body text-muted text-[13px]">
@@ -55,7 +55,7 @@ export default function Home() {
           <div className="flex-1" />
 
           <div className="font-mono text-muted text-[10px]">
-            nook.app/r/apt-living
+            nook.app/room/apt-living
           </div>
         </div>
 
