@@ -5,9 +5,12 @@ interface User {
   username: string;
 }
 
-
-export const getUserByUsername = (username: string) => {
-  client.get<User>('/users/')
+interface GetUserByIdResponse {
+  user: User;
+  message: string;
 }
 
-
+export const getUserByIdService = async () => {
+  const res = await client.get<GetUserByIdResponse>("/users");
+  return res.user;
+};

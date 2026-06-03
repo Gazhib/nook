@@ -39,7 +39,7 @@ import { DATABASE_URL } from "./loadEnv";
 export const db = drizzle(DATABASE_URL, { schema });
 const wss = new WebSocketServer({ noServer: true });
 
-wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+wss.on("connection", (ws: WebSocket, req: IncomingMessage, userId: string) => {
   const roomId = req.url?.slice(1).split("?")[0];
 
   if (!roomId) {
@@ -49,10 +49,6 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   const room = getDoc(roomId);
   const { doc, awareness, conns } = room;
   conns.add(ws);
-
-  console.log(
-    `Client connected to room ${roomId}. Total clients: ${conns.size}`
-  );
 
   WsRoomService.cancelEviction(room);
   WsRoomService.startSaveInterval(roomId, room);
@@ -136,8 +132,10 @@ server.on(
       !!token
     );
 
+    let userId;
+
     try {
-      await verifyToken(token);
+      userId = await verifyToken(token);
     } catch {
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
@@ -145,7 +143,7 @@ server.on(
     }
 
     wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit("connection", ws, req);
+      wss.emit("connection", ws, req, userId);
     });
   }
 );

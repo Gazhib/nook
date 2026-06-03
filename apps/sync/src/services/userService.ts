@@ -4,7 +4,7 @@ import { userRepository } from "../repositories/userRepository";
 export const userService = {
   async findUserById(userId: string) {
     if (!userId) throw new UserError("User id is not provided");
-    const user = userRepository.findUserById(userId);
+    const user = await userRepository.findUserById(userId);
     return user;
   },
 };

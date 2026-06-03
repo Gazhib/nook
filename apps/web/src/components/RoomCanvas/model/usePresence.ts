@@ -1,5 +1,6 @@
+import { getUserByIdService } from "@/services/userServices";
 import { Stage } from "konva/lib/Stage";
-import { RefObject, useEffect } from "react";
+import { RefObject, useEffect, useState } from "react";
 import { Awareness } from "y-protocols/awareness";
 
 const userNames = ["Batyr", "Alish", "Mon ceau", "Rusik"];
@@ -21,14 +22,26 @@ export const usePresence = (
 ) => {
   const randomNumber = Number((Math.random() * 10).toFixed()) % colors.length;
   const color = colors[randomNumber];
-  const userName = userNames[randomNumber % userNames.length];
+  const [username, setUsername] = useState<string>("");
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUserByIdService();
+        setUsername(userData.username);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const mousePos = stageRef.current?.getRelativePointerPosition();
       if (mousePos === null) return;
       awarenessRef.current?.setLocalStateField("user", {
-        name: userName,
+        name: username,
         color,
         mousePos,
       });
@@ -38,5 +51,5 @@ export const usePresence = (
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, []);
+  }, [username]);
 };

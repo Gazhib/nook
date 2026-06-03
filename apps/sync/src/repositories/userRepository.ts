@@ -6,7 +6,11 @@ import { NotFoundError, UserError } from "../errors";
 export const userRepository = {
   async findUserById(ownerId: string) {
     const [user] = await db
-      .select()
+      .select({
+        id: users.id,
+        username: users.username,
+        avatarUrl: users.avatarURL,
+      })
       .from(users)
       .where(eq(users.id, ownerId))
       .limit(1);
