@@ -73,7 +73,7 @@ export const roomRepository = {
 
   async getRoomAccess(roomId: string, userId: string) {
     const member = await db.query.roomMembers.findFirst({
-      where: and(eq(roomMembers.roomId, roomId), eq(users.id, userId)),
+      where: and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId)),
       columns: { role: true },
     });
 

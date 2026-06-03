@@ -1,3 +1,5 @@
+import { ChangeEvent } from "react";
+
 interface AuthFieldProps {
   label: string;
   value?: string;
@@ -5,6 +7,7 @@ interface AuthFieldProps {
   focused?: boolean;
   type?: "text" | "email" | "pw" | "username";
   onClick?: () => void;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const AuthField = ({
@@ -14,6 +17,7 @@ export const AuthField = ({
   focused = false,
   type = "text",
   onClick,
+  onChange,
 }: AuthFieldProps) => {
   const isMono = type === "email" || type === "pw";
   return (
@@ -23,6 +27,8 @@ export const AuthField = ({
           {label}
         </span>
         <input
+          value={value}
+          onChange={onChange}
           type={type === "pw" ? "password" : "text"}
           placeholder={placeholder}
           className={`w-full rounded-[6px] border bg-white px-3 py-[10px] text-[13px] outline-none

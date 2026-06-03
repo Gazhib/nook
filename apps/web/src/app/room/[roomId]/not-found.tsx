@@ -64,21 +64,11 @@ export default function RoomNotFound() {
         <TriedURL id={roomId?.toString()} />
 
         <div className="mt-3 inline-flex gap-[10px]">
-          <SketchButton primary className="px-4 py-3">
-            <button
-              className="h-full w-full cursor-pointer"
-              onClick={handleGoToRooms}
-            >
-              Go to your rooms
-            </button>
+          <SketchButton onClick={handleGoToRooms} primary className="px-4 py-3">
+            Go to your rooms
           </SketchButton>
-          <SketchButton ghost className="px-4 py-3">
-            <button
-              className="h-full w-full cursor-pointer"
-              onClick={handleStartRoom}
-            >
-              Create a new room
-            </button>
+          <SketchButton onClick={handleStartRoom} ghost className="px-4 py-3">
+            Create a new room
           </SketchButton>
         </div>
       </div>

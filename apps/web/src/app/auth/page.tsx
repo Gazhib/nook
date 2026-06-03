@@ -6,17 +6,26 @@ import { AuthTabs } from "@/components/auth/AuthTabs";
 import { AuthField } from "@/components/auth/AuthField";
 import { OrRule } from "@/components/auth/OrRule";
 import { useEffect, useState } from "react";
+import { useAuth } from "./useAuth";
 
 export default function AuthPage() {
   const [focusedField, setFocusedField] = useState<
     "password" | "username" | "email"
   >("email");
 
-  const [activeAuth, setActiveAuth] = useState<"signup" | "login">("login");
-
-  useEffect(() => {
-    console.log(activeAuth);
-  }, [activeAuth]);
+  const {
+    username,
+    email,
+    password,
+    error,
+    isSubmitting,
+    activeAuth,
+    setActiveAuth,
+    handleEmail,
+    handlePassword,
+    handleUsername,
+    handleSubmit,
+  } = useAuth();
 
   return (
     <main className="box-border flex h-full w-full flex-col bg-paper">
@@ -37,6 +46,8 @@ export default function AuthPage() {
           <AuthTabs active={activeAuth} setActiveAuth={setActiveAuth} />
           {activeAuth === "signup" && (
             <AuthField
+              value={email}
+              onChange={handleEmail}
               label="Email"
               placeholder="jane@studio.co"
               type="email"
@@ -45,6 +56,8 @@ export default function AuthPage() {
             />
           )}
           <AuthField
+            value={username}
+            onChange={handleUsername}
             label="Username"
             placeholder="jane_doe"
             type="username"
@@ -52,14 +65,39 @@ export default function AuthPage() {
             onClick={() => setFocusedField("username")}
           />
           <AuthField
+            value={password}
+            onChange={handlePassword}
             label="Password"
             placeholder="secret"
             type="pw"
             focused={focusedField === "password"}
             onClick={() => setFocusedField("password")}
           />
-          <SketchButton primary className="w-full py-3">
-            Sign up
+          {error && (
+            <div
+              role="alert"
+              className="rounded-[6px] border border-red-200 bg-red-50 px-3 py-2 font-body text-[12px] text-red-600"
+            >
+              {error}
+            </div>
+          )}
+          <SketchButton
+            disabled={isSubmitting}
+            onClick={handleSubmit}
+            primary
+            className="w-full gap-2 py-3"
+          >
+            {isSubmitting && (
+              <span
+                aria-hidden
+                className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              />
+            )}
+            {isSubmitting
+              ? "Please wait…"
+              : activeAuth === "login"
+              ? "Log in"
+              : "Sign up"}
           </SketchButton>
           {/* <OrRule />
           <div className="flex gap-[10px]">

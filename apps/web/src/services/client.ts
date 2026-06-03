@@ -20,10 +20,10 @@ async function request<T>(
 ): Promise<T> {
   const config: RequestInit = {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
-      // dont forget credential: include
     },
   };
 
@@ -31,7 +31,7 @@ async function request<T>(
 
   if (!res.ok) {
     if (res.status === 401) {
-      // handle logout / redirect to login
+      window.location.href = "/auth"
     }
     const errorBody = await res.json().catch(() => ({}));
     const message =

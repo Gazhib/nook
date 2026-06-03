@@ -26,7 +26,7 @@ interface GetRoomProps {
   room: Room;
   roomSnapshot: RoomSnapshot;
 }
-
+// Dont forget to handle errors
 export const getRoomStateService = async (roomId: string) => {
   try {
     const res = await client.get<GetRoomProps>(`/rooms/${roomId}`);

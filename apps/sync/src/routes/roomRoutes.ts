@@ -4,7 +4,7 @@ import { tokenMiddleware } from "../middleware/token";
 
 export const roomRoutes = new Hono();
 
-// roomRoutes.use("*", tokenMiddleware);
+roomRoutes.use("*", tokenMiddleware);
 
 roomRoutes.post("/", roomControllers.createRoom);
 

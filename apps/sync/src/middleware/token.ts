@@ -1,12 +1,16 @@
+import { getCookie } from "hono/cookie";
+import { createMiddleware } from "hono/factory";
+import { HTTPException } from "hono/http-exception";
 import { SignJWT, errors, jwtVerify } from "jose";
 import "../loadEnv";
-import { createMiddleware } from "hono/factory";
-import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { HTTPException } from "hono/http-exception";
 
 const accessSecret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET);
 
-export const generateAndSetAccessToken = async ({ userId }: { userId: string }) => {
+export const generateAndSetAccessToken = async ({
+  userId,
+}: {
+  userId: string;
+}) => {
   const token = await new SignJWT({ userId })
     .setProtectedHeader({
       alg: "HS256",
@@ -14,6 +18,8 @@ export const generateAndSetAccessToken = async ({ userId }: { userId: string }) 
     .setIssuedAt()
     .setExpirationTime("15m")
     .sign(accessSecret);
+
+  return token;
 };
 
 export const tokenMiddleware = createMiddleware(async (c, next) => {
@@ -39,7 +45,7 @@ export const tokenMiddleware = createMiddleware(async (c, next) => {
       });
     } else {
       throw new HTTPException(401, {
-        message: "User token is invalid",
+        message: `User token is invalid:${err}`,
       });
     }
   }

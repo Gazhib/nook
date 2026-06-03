@@ -91,15 +91,6 @@ export const RoomCanvas = ({ roomId }: { roomId: string }) => {
           <Transformer ref={transformRef} boundBoxFunc={transformSnapFunc} />
         </Layer>
       </Stage>
-
-      <div className="fixed right-5 top-1/2 -translate-y-1/2 z-50 bg-paper border border-hair rounded-xl p-3 shadow-md flex flex-col gap-0.5 min-w-36">
-        <button
-          onClick={() => saveNewSnapshot(roomId)}
-          className="font-display text-xs font-semibold text-muted uppercase tracking-widest px-2 pb-2 border-b border-hair-2 mb-1"
-        >
-          Add snapshot
-        </button>
-      </div>
     </div>
   );
 };

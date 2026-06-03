@@ -8,7 +8,7 @@ const UUID_REGEX =
 
 export const roomControllers = {
   async createRoom(c: Context) {
-    const ownerId = "8988ca3c-053c-4009-80a7-c11fb10a3a8a";
+    const ownerId = c.get("userId");
 
     // get ownerId from jwt
 
@@ -26,9 +26,7 @@ export const roomControllers = {
   async getRoomInfo(c: Context) {
     const roomId = c.req.param("roomId");
 
-    // dont forget get ownerId from httponlycookie and check whether they are equal
-
-    const userId = "8988ca3c-053c-4009-80a7-c11fb10a3a8a";
+    const userId = c.get("userId");
 
     if (!roomId || roomId.trim() === "") {
       return c.json({ error: "Invalid roomId" }, 400);
@@ -58,6 +56,8 @@ export const roomControllers = {
   async setRoomSnapshot(c: Context) {
     const { roomId, state } = await c.req.json();
 
+    // Dont forget to add check of user
+
     if (!UUID_REGEX.test(roomId)) {
       throw new RoomError("Room not found");
     }
@@ -72,7 +72,7 @@ export const roomControllers = {
 
     // dont forget to pick userId from jwt
 
-    const userId = "8988ca3c-053c-4009-80a7-c11fb10a3a8a";
+    const userId = c.get("userId");
 
     if (!roomId || roomId.trim() === "") {
       return c.json({ error: "Invalid roomId" }, 400);

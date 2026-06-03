@@ -37,8 +37,8 @@ export default function Home() {
         </div>
 
         <div className="mt-8 inline-flex gap-[10px]">
-          <SketchButton primary className="px-4 py-3">
-            <button className="h-full w-full cursor-pointer" onClick={handleStartRoom}>Start a room →</button>
+          <SketchButton onClick={handleStartRoom} primary className="px-4 py-3">
+            Start a room →
           </SketchButton>
           <SketchButton ghost className="px-4 py-3">
             See it work

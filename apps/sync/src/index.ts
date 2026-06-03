@@ -10,7 +10,7 @@ app.use(
     origin: "http://localhost:3000",
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
-    // credentials: true,
+    credentials: true,
     maxAge: 86400,
   })
 );
@@ -29,6 +29,7 @@ import { YJScontroller } from "./ws/controllers/YJScontroller";
 import { getDoc } from "./ws/model/YJSmodel";
 import { WsRoomService } from "./ws/services/wsRoomService";
 import * as schema from "./schemas";
+import { HTTPException } from "hono/http-exception";
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
 const wss = new WebSocketServer({ noServer: true });
@@ -73,6 +74,10 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 const customErrorNames = new Set(["NotFoundError", "RoomError", "UserError"]);
 
 app.onError((err, c) => {
+
+  if (err instanceof HTTPException)
+    return c.json({ error: err.message }, 401);
+
   if (err instanceof Error && customErrorNames.has(err.name))
     return c.json({ error: err.message }, 404);
 

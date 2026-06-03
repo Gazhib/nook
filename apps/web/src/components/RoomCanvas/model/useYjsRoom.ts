@@ -28,7 +28,7 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
       try {
         const res = await getRoomStateService(roomId);
 
-        if (res?.roomSnapshot.state) {
+        if (res?.roomSnapshot && res?.roomSnapshot.state) {
           const neededState = new Uint8Array(res.roomSnapshot.state.data);
 
           Y.applyUpdate(ydoc, neededState);
