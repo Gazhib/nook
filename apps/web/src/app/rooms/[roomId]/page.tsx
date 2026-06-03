@@ -18,6 +18,7 @@ export default function Room({
         onShare={() => {
           setOpen(true);
         }}
+        roomId={roomId}
       />
       <RoomCanvas roomId={roomId} />
       <ShareModal onClose={() => setOpen(false)} open={open} />

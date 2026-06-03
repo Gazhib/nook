@@ -14,6 +14,7 @@ roomRoutes.get("/:roomId/room_members", roomControllers.getRoomMembers);
 roomRoutes.get("/:roomId/accessibility", roomControllers.setRoomAccessibility);
 roomRoutes.get("/:roomId/access", roomControllers.getRoomAccess);
 roomRoutes.get("/", roomControllers.getRooms);
+roomRoutes.get("/:roomId/name", roomControllers.getRoomName);
 
 roomRoutes.post("/:roomId/:username/invite", roomControllers.inviteUser);
 roomRoutes.post("/:roomId/rename", roomControllers.renameRoom);

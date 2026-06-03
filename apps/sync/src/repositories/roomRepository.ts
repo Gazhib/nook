@@ -199,4 +199,16 @@ export const roomRepository = {
   async renameRoom(roomId: string, newName: string) {
     await db.update(rooms).set({ name: newName }).where(eq(rooms.id, roomId));
   },
+
+  async getRoomName(roomId: string) {
+    const [room] = await db
+      .select({ name: rooms.name })
+      .from(rooms)
+      .where(eq(rooms.id, roomId))
+      .limit(1);
+
+    if (!room) throw new NotFoundError("Room not found");
+
+    return room.name;
+  },
 };

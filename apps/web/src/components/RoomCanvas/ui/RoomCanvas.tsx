@@ -14,10 +14,9 @@ import { notFound } from "next/navigation";
 export const RoomCanvas = ({ roomId }: { roomId: string }) => {
   const stageRef = useRef<StageType | null>(null);
 
-  const { yFurniture, users, awarenessRef, saveNewSnapshot, isRoomMissing } =
-    useYjsRoom({
-      roomId: roomId,
-    });
+  const { yFurniture, users, awarenessRef, isRoomMissing } = useYjsRoom({
+    roomId: roomId,
+  });
 
   if (isRoomMissing) notFound();
 
@@ -81,9 +80,9 @@ export const RoomCanvas = ({ roomId }: { roomId: string }) => {
             return (
               <Cursor
                 key={`${user.clientId}`}
-                position={user.user.mousePos}
-                color={user.user.color}
-                name={user.user.name}
+                position={user.user?.mousePos}
+                color={user.user?.color}
+                name={user.user?.name}
               />
             );
           })}

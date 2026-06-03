@@ -15,7 +15,7 @@ export const ShareModal = ({
 }) => {
   const {
     visibility,
-    setVisibility,
+    handleChangeVisibility,
     isPublic,
     link,
     handleCopy,
@@ -60,7 +60,7 @@ export const ShareModal = ({
                   type="button"
                   role="radio"
                   aria-checked={visibility === v}
-                  onClick={() => setVisibility(v)}
+                  onClick={handleChangeVisibility}
                   className={`cursor-pointer rounded-[5px] px-3 py-1 text-xs font-medium capitalize transition-colors ${
                     visibility === v
                       ? "bg-ink text-white"

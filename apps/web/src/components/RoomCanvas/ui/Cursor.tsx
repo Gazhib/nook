@@ -12,7 +12,7 @@ export const Cursor = ({
 
 
   return (
-    <Group x={position.x} y={position.y}>
+    <Group x={position?.x} y={position?.y}>
       <Line
         points={[0, 0, 0, 17, 4, 13, 7, 20, 9, 19, 6, 12, 11, 12]}
         closed

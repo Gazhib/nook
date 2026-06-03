@@ -8,5 +8,5 @@ export const middleware = async (req: NextRequest) => {
 };
 
 export const config = {
-  matcher: ["/room/:path*"],
+  matcher: ["/rooms/:path*"],
 };

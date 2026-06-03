@@ -87,4 +87,9 @@ export const roomService = {
 
     await roomRepository.renameRoom(roomId, newName);
   },
+
+  async getRoomName(roomId: string) {
+    const name = await roomRepository.getRoomName(roomId);
+    return name;
+  },
 };

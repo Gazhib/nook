@@ -154,4 +154,14 @@ export const roomControllers = {
 
     return c.json({ message: "Room renamed successfully" }, 200);
   },
+
+  async getRoomName(c: Context) {
+    const roomId = c.req.param("roomId");
+
+    assertRoomId(roomId);
+
+    const name = await roomService.getRoomName(roomId);
+
+    return c.json({ name, message: "Room name found successfully" }, 200);
+  },
 };

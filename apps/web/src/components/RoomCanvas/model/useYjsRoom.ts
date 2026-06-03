@@ -3,7 +3,7 @@ import {
   getRoomStateService,
   saveRoomStateService,
 } from "@/services/roomServices";
-import { FurnitureItem, UsersAwareness } from "@nook/shared";
+import { FurnitureItem, Room, UsersAwareness } from "@nook/shared";
 import { useEffect, useRef, useState } from "react";
 
 import { Awareness } from "y-protocols/awareness";
@@ -32,6 +32,7 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
           const neededState = new Uint8Array(res.roomSnapshot.state.data);
 
           Y.applyUpdate(ydoc, neededState);
+          console.log("Applied room snapshot length", neededState.length);
           setIsRoomMissing(false);
         }
       } catch (err) {
@@ -50,10 +51,17 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
     const provider = new WebsocketProvider(
       "ws://localhost:1234",
       roomId.toString(),
-      ydoc
+      ydoc,
+      {
+        disableBc: true,
+      }
     );
 
     const awareness = provider.awareness;
+
+    provider.on("status", (event) => {
+      console.log("WebSocket connection status:", event.status);
+    });
 
     awareness.on("change", (_changes: any) => {
       const states = Array.from(awareness.getStates().entries())

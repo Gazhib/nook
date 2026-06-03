@@ -12,9 +12,6 @@ export const YJSservice = {
     ws: WebSocket,
     awareness: awarenessProtocol.Awareness
   ) {
-    // A malformed frame from any client must not throw out of the socket's
-    // "message" handler (an uncaught throw there can take the process down).
-    // Decode failures are isolated per-message and logged.
     try {
       const buffers = Array.isArray(message)
         ? message
@@ -28,10 +25,17 @@ export const YJSservice = {
       const encoder = encoding.createEncoder();
       const messageType = decoding.readVarUint(decoder);
 
+      console.log(
+        "Received message of type",
+        messageType,
+        "with length",
+        buffers.length
+      );
+
       if (messageType === 0) {
         // sync
         encoding.writeVarUint(encoder, 0);
-        syncProtocol.readSyncMessage(decoder, encoder, doc, null);
+        syncProtocol.readSyncMessage(decoder, encoder, doc, ws);
         if (encoding.length(encoder) > 1) {
           ws.send(encoding.toUint8Array(encoder));
         }

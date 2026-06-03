@@ -92,9 +92,14 @@ export const getRoomsForUserService = async () => {
 };
 
 export const renameRoomService = async (roomId: string, newName: string) => {
-  await client.post(
-    `/rooms/${roomId}/rename`, {
-      newName
-    }
+  await client.post(`/rooms/${roomId}/rename`, {
+    newName,
+  });
+};
+
+export const getRoomNameService = async (roomId: string) => {
+  const res = await client.get<{ name: string; message: string }>(
+    `/rooms/${roomId}/name`
   );
+  return res.name;
 };

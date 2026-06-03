@@ -50,6 +50,10 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   const { doc, awareness, conns } = room;
   conns.add(ws);
 
+  console.log(
+    `Client connected to room ${roomId}. Total clients: ${conns.size}`
+  );
+
   WsRoomService.cancelEviction(room);
   WsRoomService.startSaveInterval(roomId, room);
 
@@ -111,27 +115,37 @@ const server = serve({ fetch: app.fetch, port: 1234 }, () => {
   console.log("Server is running on 1234");
 });
 
-server.on("upgrade", async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-  const roomId = req.url?.slice(1).split("?")[0];
-  if (!roomId) {
-    socket.destroy();
-    return;
+server.on(
+  "upgrade",
+  async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
+    const roomId = req.url?.slice(1).split("?")[0];
+    if (!roomId) {
+      socket.destroy();
+      return;
+    }
+
+    const cookieHeader = req.headers.cookie;
+    const token = Object.fromEntries(
+      (cookieHeader ?? "").split(";").map((c) => c.trim().split("="))
+    ).access_token;
+
+    console.log(
+      "Received WebSocket upgrade request for room",
+      roomId,
+      "with token",
+      !!token
+    );
+
+    try {
+      await verifyToken(token);
+    } catch {
+      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit("connection", ws, req);
+    });
   }
-
-  const cookieHeader = req.headers.cookie;
-  const token = Object.fromEntries(
-    (cookieHeader ?? "").split(";").map((c) => c.trim().split("="))
-  ).access_token;
-
-  try {
-    await verifyToken(token);
-  } catch {
-    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-    socket.destroy();
-    return;
-  }
-
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    wss.emit("connection", ws, req);
-  });
-});
+);

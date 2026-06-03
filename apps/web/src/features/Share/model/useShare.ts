@@ -1,4 +1,5 @@
 import {
+  changeRoomAccessibilityService,
   getRoomMembersService,
   inviteUserToRoomService,
   RoomMember,
@@ -12,7 +13,11 @@ export const useShare = () => {
   const isPublic = visibility === "public";
 
   const { roomId } = useParams();
-  const link = `${window.location.origin}/room/${roomId}`;
+  const [link, setLink] = useState("");
+
+  useEffect(() => {
+    setLink(`${window.location.origin}/rooms/${roomId}`);
+  }, [roomId]);
 
   const [username, setUsername] = useState("");
   const [role, setRole] = useState("Editor");
@@ -47,9 +52,14 @@ export const useShare = () => {
     inviteUserToRoomService(roomId.toString(), username, role);
   };
 
+  const handleChangeVisibility = () => {
+    if (roomId) changeRoomAccessibilityService(roomId.toString());
+    setVisibility((prev) => (prev === "private" ? "public" : "private"));
+  };
+
   return {
     visibility,
-    setVisibility,
+    handleChangeVisibility,
     isPublic,
     link,
     handleCopy,
