@@ -12,6 +12,10 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["editor", "owner", "viewer"]);
+export const accessibilityEnum = pgEnum("type_of_accessibility", [
+  "public",
+  "private",
+]);
 
 const bytea = customType<{ data: Buffer }>({
   dataType() {
@@ -34,6 +38,8 @@ export const rooms = pgTable("rooms", {
     .notNull()
     .references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+  typeOfAccessibility: accessibilityEnum().default("private").notNull(),
+  name: varchar("name", { length: 255 }).default("Untitled room").notNull(),
 });
 
 export const room_snapshots = pgTable("room_snapshots", {

@@ -1,3 +1,4 @@
+CREATE TYPE "public"."type_of_accessibility" AS ENUM('public', 'private');--> statement-breakpoint
 CREATE TYPE "public"."role" AS ENUM('editor', 'owner', 'viewer');--> statement-breakpoint
 CREATE TABLE "room_members" (
 	"room_id" uuid NOT NULL,
@@ -17,7 +18,8 @@ CREATE TABLE "room_snapshots" (
 CREATE TABLE "rooms" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"owner_id" uuid NOT NULL,
-	"created_at" timestamp DEFAULT now()
+	"created_at" timestamp DEFAULT now(),
+	"typeOfAccessibility" "type_of_accessibility" DEFAULT 'private' NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "users" (

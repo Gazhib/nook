@@ -11,7 +11,11 @@ export default function Home() {
 
   const handleStartRoom = async () => {
     const roomId = await createRoomService();
-    router.push(`/room/${roomId}`);
+    router.push(`/rooms/${roomId}`);
+  };
+
+  const handleGoToMyRooms = () => {
+    router.push("/rooms");
   };
 
   return (
@@ -40,8 +44,8 @@ export default function Home() {
           <SketchButton onClick={handleStartRoom} primary className="px-4 py-3">
             Start a room →
           </SketchButton>
-          <SketchButton ghost className="px-4 py-3">
-            See it work
+          <SketchButton onClick={handleGoToMyRooms} ghost className="px-4 py-3">
+            See my rooms
           </SketchButton>
         </div>
       </div>

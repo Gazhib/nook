@@ -1,9 +1,25 @@
-import { and, desc, eq, notInArray } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { db } from "..";
-import { RoomError } from "../errors";
+import { ConflictError, NotFoundError, RoomError } from "../errors";
 import { room_snapshots, roomMembers, rooms, users } from "../schemas";
 
+/** Postgres unique-violation error code. */
+const PG_UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: string }).code === PG_UNIQUE_VIOLATION
+  );
+}
+
 type Executor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export type Role = "viewer" | "editor" | "owner";
+
+export type Accessibility = "private" | "public";
 
 const MAX_SNAPSHOTS_PER_ROOM = 10;
 
@@ -21,6 +37,10 @@ export const roomRepository = {
     return newRoom.id;
   },
 
+  async setRole(userId: string, role: Role, roomId: string) {
+    await db.insert(roomMembers).values({ userId, role, roomId });
+  },
+
   async getRoomInfo(roomId: string) {
     const [room] = await db
       .select()
@@ -28,7 +48,7 @@ export const roomRepository = {
       .where(eq(rooms.id, roomId))
       .limit(1);
 
-    if (!room) throw new RoomError("Could not find a Room");
+    if (!room) throw new NotFoundError("Room not found");
 
     return room;
   },
@@ -73,10 +93,110 @@ export const roomRepository = {
 
   async getRoomAccess(roomId: string, userId: string) {
     const member = await db.query.roomMembers.findFirst({
-      where: and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId)),
+      where: and(
+        eq(roomMembers.roomId, roomId),
+        eq(roomMembers.userId, userId)
+      ),
       columns: { role: true },
     });
 
     return member?.role ?? null;
+  },
+
+  async getRoomAccessibility(roomId: string) {
+    const [room] = await db
+      .select({ typeOfAccessibility: rooms.typeOfAccessibility })
+      .from(rooms)
+      .where(eq(rooms.id, roomId));
+    return room?.typeOfAccessibility;
+  },
+
+  async setRoomAccessibility(roomId: string) {
+    const typeOfAccessibility = await db
+      .select({ typeOfAccessibility: rooms.typeOfAccessibility })
+      .from(rooms)
+      .where(eq(rooms.id, roomId))
+      .then((res) => res[0]?.typeOfAccessibility);
+
+    let neededAccessibility: Accessibility;
+
+    if (typeOfAccessibility === "private") {
+      neededAccessibility = "public";
+    } else {
+      neededAccessibility = "private";
+    }
+
+    await db
+      .update(rooms)
+      .set({ typeOfAccessibility: neededAccessibility })
+      .where(eq(rooms.id, roomId));
+  },
+
+  async getRoomMembers(roomId: string) {
+    const members = await db
+      .select()
+      .from(roomMembers)
+      .where(eq(roomMembers.roomId, roomId));
+
+    const userIds = members.map((m) => m.userId);
+
+    const usersInfo = await db
+      .select({ id: users.id, username: users.username })
+      .from(users)
+      .where(inArray(users.id, userIds));
+
+    return members.map((m) => {
+      const userInfo = usersInfo.find((u) => u.id === m.userId);
+      return {
+        userId: m.userId,
+        role: m.role,
+        username: userInfo?.username ?? "Unknown",
+      };
+    });
+  },
+
+  async inviteUser(roomId: string, username: string, role: Role) {
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    try {
+      await db.insert(roomMembers).values({
+        userId: user.id,
+        role: role.toLocaleLowerCase() as Role,
+        roomId,
+      });
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        throw new ConflictError("User is already a member of this room");
+      }
+      console.error(err);
+      throw new RoomError("Could not invite user to the room");
+    }
+  },
+
+  async getRoomsForUser(userId: string) {
+    const roomsForUser = await db
+      .select({
+        id: rooms.id,
+        ownerId: rooms.ownerId,
+        typeOfAccessibility: rooms.typeOfAccessibility,
+        name: rooms.name,
+      })
+      .from(rooms)
+      .innerJoin(roomMembers, eq(rooms.id, roomMembers.roomId))
+      .where(eq(roomMembers.userId, userId));
+
+    return roomsForUser;
+  },
+
+  async renameRoom(roomId: string, newName: string) {
+    await db.update(rooms).set({ name: newName }).where(eq(rooms.id, roomId));
   },
 };

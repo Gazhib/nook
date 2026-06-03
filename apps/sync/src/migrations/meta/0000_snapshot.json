@@ -1,5 +1,5 @@
 {
-  "id": "2dbacaf2-5e15-40f1-82a1-22972c64e66d",
+  "id": "b3f1ea35-87d7-4d70-85b8-24ba75c7c3a7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -154,6 +154,14 @@
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
+        },
+        "typeOfAccessibility": {
+          "name": "typeOfAccessibility",
+          "type": "type_of_accessibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
         }
       },
       "indexes": {},
@@ -231,6 +239,14 @@
     }
   },
   "enums": {
+    "public.type_of_accessibility": {
+      "name": "type_of_accessibility",
+      "schema": "public",
+      "values": [
+        "public",
+        "private"
+      ]
+    },
     "public.role": {
       "name": "role",
       "schema": "public",

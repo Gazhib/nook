@@ -12,30 +12,39 @@ export const YJSservice = {
     ws: WebSocket,
     awareness: awarenessProtocol.Awareness
   ) {
-    const buffers = Array.isArray(message)
-      ? message
-      : message instanceof ArrayBuffer
-      ? [Buffer.from(message)]
-      : [message];
+    // A malformed frame from any client must not throw out of the socket's
+    // "message" handler (an uncaught throw there can take the process down).
+    // Decode failures are isolated per-message and logged.
+    try {
+      const buffers = Array.isArray(message)
+        ? message
+        : message instanceof ArrayBuffer
+        ? [Buffer.from(message)]
+        : [message];
 
-    const decoder = decoding.createDecoder(
-      new Uint8Array(Buffer.concat(buffers))
-    );
-    const encoder = encoding.createEncoder();
-    const messageType = decoding.readVarUint(decoder);
-
-    if (messageType === 0) {
-      // sync
-      encoding.writeVarUint(encoder, 0);
-      syncProtocol.readSyncMessage(decoder, encoder, doc, null);
-      if (encoding.length(encoder) > 1) ws.send(encoding.toUint8Array(encoder));
-    } else if (messageType === 1) {
-      // awareness
-      awarenessProtocol.applyAwarenessUpdate(
-        awareness,
-        decoding.readVarUint8Array(decoder),
-        ws
+      const decoder = decoding.createDecoder(
+        new Uint8Array(Buffer.concat(buffers))
       );
+      const encoder = encoding.createEncoder();
+      const messageType = decoding.readVarUint(decoder);
+
+      if (messageType === 0) {
+        // sync
+        encoding.writeVarUint(encoder, 0);
+        syncProtocol.readSyncMessage(decoder, encoder, doc, null);
+        if (encoding.length(encoder) > 1) {
+          ws.send(encoding.toUint8Array(encoder));
+        }
+      } else if (messageType === 1) {
+        // awareness
+        awarenessProtocol.applyAwarenessUpdate(
+          awareness,
+          decoding.readVarUint8Array(decoder),
+          ws
+        );
+      }
+    } catch (err) {
+      console.error("Failed to handle YJS message", err);
     }
   },
 };

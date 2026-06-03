@@ -39,11 +39,20 @@ export const useAuth = () => {
     }
 
     setIsSubmitting(true);
-    if (activeAuth === "signup")
-      await registerService({ username, email, password });
-    else await loginService({ username, password });
-    setIsSubmitting(false);
-    router.push("/");
+    try {
+      if (activeAuth === "signup")
+        await registerService({ username, email, password });
+      else await loginService({ username, password });
+      router.push("/");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {

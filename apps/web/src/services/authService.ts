@@ -16,7 +16,7 @@ export const registerService = async ({
       password,
     });
   } catch (err) {
-    console.log(err);
+    throw err;
   }
 };
 
@@ -33,7 +33,7 @@ export const loginService = async ({
       password,
     });
   } catch (err) {
-    console.log(err);
+    throw err;
   }
 };
 

@@ -1,15 +1,18 @@
 export const Wordmark = ({
+  onClick,
   size = 28,
   color = "var(--color-ink)",
   accent = "var(--color-accent)",
 }: {
+  onClick?: () => void;
   size?: number;
   color?: string;
   accent?: string;
 }) => {
   return (
     <div
-      className="font-display inline-flex items-center"
+      onClick={onClick}
+      className="font-display inline-flex items-center cursor-pointer select-none"
       style={{ gap: size * 0.25 }}
     >
       <svg

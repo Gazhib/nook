@@ -1,8 +1,17 @@
 import * as path from "path"
 import * as dotenv from "dotenv"
 
-// __dirname is not available in ESM; drizzle-kit runs from the package dir,
-// so go up two levels to the workspace root where .env lives.
 const envPath = path.resolve(process.cwd(), "../..", ".env")
 
 dotenv.config({ path: envPath });
+
+export function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.trim() === "") {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+export const DATABASE_URL = requireEnv("DATABASE_URL");
+export const JWT_ACCESS_SECRET = requireEnv("JWT_ACCESS_SECRET");

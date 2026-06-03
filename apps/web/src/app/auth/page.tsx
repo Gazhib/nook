@@ -2,11 +2,11 @@
 
 import { SketchButton } from "@/components/Button";
 import { Wordmark } from "@/components/Logo";
-import { AuthTabs } from "@/components/auth/AuthTabs";
-import { AuthField } from "@/components/auth/AuthField";
-import { OrRule } from "@/components/auth/OrRule";
+import { AuthTabs } from "@/features/auth/ui/AuthTabs";
+import { AuthField } from "@/features/auth/ui/AuthField";
+import { OrRule } from "@/features/auth/ui/OrRule";
 import { useEffect, useState } from "react";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../../features/auth/model/useAuth";
 
 export default function AuthPage() {
   const [focusedField, setFocusedField] = useState<

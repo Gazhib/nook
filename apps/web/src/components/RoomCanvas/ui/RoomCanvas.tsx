@@ -5,10 +5,10 @@ import { Cursor } from "./Cursor";
 import { Furniture } from "./Furniture";
 import { FurnitureSidebar } from "./FurnitureSidebar";
 import { Grid } from "./Grid";
-import { useFurniture } from "./model/useFurniture";
-import { useViewPort } from "./model/useViewPort";
-import { useYjsRoom } from "./model/useYjsRoom";
-import { usePresence } from "./model/usePresence";
+import { useFurniture } from "../model/useFurniture";
+import { useViewPort } from "../model/useViewPort";
+import { useYjsRoom } from "../model/useYjsRoom";
+import { usePresence } from "../model/usePresence";
 import { notFound } from "next/navigation";
 
 export const RoomCanvas = ({ roomId }: { roomId: string }) => {

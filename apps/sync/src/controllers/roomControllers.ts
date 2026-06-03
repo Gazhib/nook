@@ -1,23 +1,39 @@
 import { Context } from "hono";
-import { RoomError } from "../errors";
+import { BadRequestError, NotFoundError } from "../errors";
 import { roomService } from "../services/roomService";
-import { HTTPException } from "hono/http-exception";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function readJsonBody(
+  c: Context
+): Promise<Record<string, unknown>> {
+  const body = await c.req.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new BadRequestError("Request body must be a JSON object");
+  }
+  return body as Record<string, unknown>;
+}
+
+export function assertRoomId(
+  roomId: string | undefined
+): asserts roomId is string {
+  if (!roomId || roomId.trim() === "") {
+    throw new BadRequestError("Invalid roomId");
+  }
+  if (!UUID_REGEX.test(roomId)) {
+    throw new NotFoundError("Room not found");
+  }
+}
 
 export const roomControllers = {
   async createRoom(c: Context) {
     const ownerId = c.get("userId");
 
-    // get ownerId from jwt
-
     if (!ownerId || ownerId.trim() === "") {
-      return c.json({ error: "Invalid ownerId" }, 400);
+      throw new BadRequestError("Invalid ownerId");
     }
 
-    if (!ownerId) throw new Error("Owner id is not provided");
-    // userService.findUserById(ownerId);
     const roomId = await roomService.createRoom(ownerId);
 
     return c.json({ message: "Room was created successfully", roomId }, 200);
@@ -25,42 +41,34 @@ export const roomControllers = {
 
   async getRoomInfo(c: Context) {
     const roomId = c.req.param("roomId");
-
     const userId = c.get("userId");
 
-    if (!roomId || roomId.trim() === "") {
-      return c.json({ error: "Invalid roomId" }, 400);
-    }
+    assertRoomId(roomId);
 
-    if (!UUID_REGEX.test(roomId)) {
-      throw new RoomError("Room not found");
-    }
-
-    const role = roomService.getRoomAccess(roomId, userId);
-
-    if (role === null) {
-      throw new HTTPException(404, {
-        message: "You have no access to the room",
-      });
-    }
+    await roomService.getRoomAccess(roomId, userId);
 
     const room = await roomService.getRoomInfo(roomId);
     const roomSnapshot = await roomService.getRoomSnapshot(roomId);
 
     return c.json(
-      { message: "Room found successfully", room, roomSnapshot, role },
+      { message: "Room found successfully", room, roomSnapshot },
       200
     );
   },
 
   async setRoomSnapshot(c: Context) {
-    const { roomId, state } = await c.req.json();
+    const body = await readJsonBody(c);
+    const roomId = body.roomId;
+    const state = body.state;
 
-    // Dont forget to add check of user
-
-    if (!UUID_REGEX.test(roomId)) {
-      throw new RoomError("Room not found");
+    if (typeof roomId !== "string") {
+      throw new BadRequestError('Field "roomId" is required');
     }
+    if (typeof state !== "string") {
+      throw new BadRequestError('Field "state" must be a base64 string');
+    }
+
+    assertRoomId(roomId);
 
     await roomService.setRoomSnapshot(roomId, Buffer.from(state, "base64"));
 
@@ -68,26 +76,82 @@ export const roomControllers = {
   },
 
   async getRoomAccess(c: Context) {
-    const roomId = await c.req.param("roomId");
-
-    // dont forget to pick userId from jwt
-
+    const roomId = c.req.param("roomId");
     const userId = c.get("userId");
 
-    if (!roomId || roomId.trim() === "") {
-      return c.json({ error: "Invalid roomId" }, 400);
-    }
+    assertRoomId(roomId);
 
-    if (!UUID_REGEX.test(roomId)) {
-      throw new RoomError("Room not found");
-    }
-
-    const role = await roomService.getRoomAccess(roomId, userId);
+    const role = await roomService.getRoomRole(roomId, userId);
 
     if (role === null) {
-      return c.json({ message: "You have no access to the room" }, 404);
+      throw new NotFoundError("You have no access to the room");
     }
 
     return c.json({ role, message: "Your role" }, 200);
+  },
+
+  async setRoomAccessibility(c: Context) {
+    const roomId = c.req.param("roomId");
+
+    assertRoomId(roomId);
+
+    await roomService.setRoomAccessibility(roomId);
+    return c.json({ message: "Room accessibility has changed" }, 200);
+  },
+
+  async getRoomMembers(c: Context) {
+    const roomId = c.req.param("roomId");
+
+    assertRoomId(roomId);
+
+    const members = await roomService.getRoomMembers(roomId);
+    return c.json({ members, message: "Room members found" }, 200);
+  },
+
+  async inviteUser(c: Context) {
+    const { roomId, username } = c.req.param();
+    const body = await readJsonBody(c);
+    const role = body.role;
+
+    assertRoomId(roomId);
+
+    if (!username || username.trim() === "") {
+      throw new BadRequestError("Invalid username");
+    }
+    if (typeof role !== "string") {
+      throw new BadRequestError('Field "role" is required');
+    }
+
+    const inviterId = c.get("userId");
+
+    await roomService.inviteUser(roomId, username, role, inviterId);
+
+    return c.json({ message: "User invited successfully" }, 200);
+  },
+
+  async getRooms(c: Context) {
+    const userId = c.get("userId");
+
+    const rooms = await roomService.getRoomsForUser(userId);
+
+    return c.json({ rooms, message: "Rooms found successfully" }, 200);
+  },
+
+  async renameRoom(c: Context) {
+    const roomId = c.req.param("roomId");
+    const body = await readJsonBody(c);
+    const newName = body.newName;
+
+    assertRoomId(roomId);
+
+    if (typeof newName !== "string" || newName.trim() === "") {
+      throw new BadRequestError("Invalid newName");
+    }
+
+    const userId = c.get("userId");
+
+    await roomService.renameRoom(roomId, newName, userId);
+
+    return c.json({ message: "Room renamed successfully" }, 200);
   },
 };

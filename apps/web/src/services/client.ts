@@ -1,3 +1,5 @@
+import toast from "react-hot-toast";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
 export class ApiError extends Error {
@@ -31,7 +33,23 @@ async function request<T>(
 
   if (!res.ok) {
     if (res.status === 401) {
-      window.location.href = "/auth"
+      const errorBody = await res.json().catch(() => ({}));
+      const message =
+        (errorBody as { message?: string }).message ??
+        `Request failed: ${res.status}`;
+      console.log(message);
+      window.location.href = "/auth";
+    } else if (res.status === 400) {
+      const errorBody = await res.json().catch(() => ({}));
+      const message = errorBody.error ?? `Bad request: ${res.status}`;
+      throw new ApiError(message, res.status, errorBody);
+    } else if (res.status === 500) {
+      toast.error("Server error. Please try again later.");
+      const errorBody = await res.json().catch(() => ({}));
+      const message =
+        (errorBody as { message?: string }).message ??
+        `Server error: ${res.status}`;
+      throw new ApiError(message, res.status, errorBody);
     }
     const errorBody = await res.json().catch(() => ({}));
     const message =

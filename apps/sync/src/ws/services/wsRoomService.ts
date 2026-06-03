@@ -17,6 +17,8 @@ export const WsRoomService = {
       const state = Buffer.from(update);
       await roomRepository.setRoomSnapshot(roomId, state);
       room.dirty = false;
+    } catch (err) {
+      console.error(`Failed to save snapshot for room ${roomId}`, err);
     } finally {
       room.saving = false;
     }
