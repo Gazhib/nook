@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+<!-- foliage -->
+<path d="M32 8 C20 14 18 28 26 34 C18 30 14 38 22 40 L42 40 C50 38 46 30 38 34 C46 28 44 14 32 8 Z" fill="#798C70"/>
+<path d="M32 8 C28 16 28 28 32 40 C36 28 36 16 32 8 Z" fill="#596752" opacity="0.55"/>
+<path d="M32 12 C26 18 25 27 30 33" stroke="#A1AE9A" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.7"/>
+<!-- pot -->
+<path d="M22 40 h20 l-3 14 h-14 z" fill="#9A6A4A"/>
+<rect x="20" y="38" width="24" height="5" rx="2" fill="#7A4F35"/>
+</svg>

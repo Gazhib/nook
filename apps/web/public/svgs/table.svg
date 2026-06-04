@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+<!-- top -->
+<rect x="8" y="24" width="48" height="9" rx="3" fill="#695B4E"/>
+<rect x="8" y="24" width="48" height="4" rx="2" fill="#968C83"/>
+<!-- legs -->
+<rect x="13" y="33" width="5" height="21" rx="2" fill="#4D4339"/>
+<rect x="46" y="33" width="5" height="21" rx="2" fill="#4D4339"/>
+<!-- apron -->
+<rect x="13" y="33" width="38" height="4" fill="#4D4339"/>
+</svg>

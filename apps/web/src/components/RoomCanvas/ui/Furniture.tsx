@@ -1,15 +1,18 @@
-import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
-import { Ref, useEffect } from "react";
-import { Rect } from "react-konva";
+import type { Image as KonvaImage } from "konva/lib/shapes/Image";
+import { Ref } from "react";
+import { Image } from "react-konva";
 
 import { FurnitureItem } from "@nook/shared";
 import { KonvaEventObject } from "konva/lib/Node";
 
+import { useFurnitureImage } from "../model/useFurnitureImage";
+
 interface FurnitureProps extends FurnitureItem {
+  type: string;
   onClick: () => void;
   color: string;
   isSelected?: boolean;
-  ref?: Ref<KonvaRect> | null;
+  ref?: Ref<KonvaImage> | null;
   dragBoundFunc: (pos: { x: number; y: number }) => { x: number; y: number };
   onDragStart?: () => void;
   onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
@@ -23,7 +26,6 @@ export const Furniture = ({
   position: { x, y },
   width,
   height,
-  color,
   isSelected = false,
   ref,
   dragBoundFunc,
@@ -33,8 +35,11 @@ export const Furniture = ({
   rotation,
   draggable,
 }: FurnitureProps) => {
+  const image = useFurnitureImage(type);
+
   return (
-    <Rect
+    <Image
+      image={image}
       onTransformEnd={onTransformEnd}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -44,7 +49,6 @@ export const Furniture = ({
       y={y}
       width={width}
       height={height}
-      fill={color}
       draggable={draggable}
       stroke={"#C45A3C"}
       strokeWidth={isSelected ? 2 : 0}

@@ -1,6 +1,6 @@
 import { FurnitureItem, Role } from "@nook/shared";
 import { KonvaEventObject } from "konva/lib/Node";
-import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
+import type { Image as KonvaImage } from "konva/lib/shapes/Image";
 import type {
   Box,
   Transformer as KonvaTransformer,
@@ -19,7 +19,7 @@ export const useFurniture = (
 
   const transformRef = useRef<KonvaTransformer>(null);
 
-  const selectedFurnitureRef = useRef<KonvaRect>(null);
+  const selectedFurnitureRef = useRef<KonvaImage>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const gridSize = 30;

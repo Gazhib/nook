@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+<!-- top -->
+<rect x="7" y="22" width="50" height="8" rx="3" fill="#7D6A5B"/>
+<rect x="7" y="22" width="50" height="3.5" rx="1.8" fill="#A4968C"/>
+<!-- left leg -->
+<rect x="11" y="30" width="5" height="24" rx="2" fill="#5C4E43"/>
+<!-- right drawer pedestal -->
+<rect x="38" y="30" width="16" height="24" rx="2.5" fill="#5C4E43"/>
+<rect x="41" y="34" width="10" height="6" rx="1.5" fill="#7D6A5B"/>
+<rect x="41" y="43" width="10" height="6" rx="1.5" fill="#7D6A5B"/>
+<rect x="44.5" y="36.5" width="3" height="1.6" rx="0.8" fill="#A4968C"/>
+<rect x="44.5" y="45.5" width="3" height="1.6" rx="0.8" fill="#A4968C"/>
+</svg>
