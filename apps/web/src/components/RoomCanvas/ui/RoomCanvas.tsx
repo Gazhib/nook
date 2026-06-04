@@ -10,8 +10,15 @@ import { useViewPort } from "../model/useViewPort";
 import { useYjsRoom } from "../model/useYjsRoom";
 import { usePresence } from "../model/usePresence";
 import { notFound } from "next/navigation";
+import { Role } from "@nook/shared";
 
-export const RoomCanvas = ({ roomId }: { roomId: string }) => {
+export const RoomCanvas = ({
+  roomId,
+  role,
+}: {
+  roomId: string;
+  role: Role | null;
+}) => {
   const stageRef = useRef<StageType | null>(null);
 
   const { yFurniture, users, awarenessRef, isRoomMissing } = useYjsRoom({
@@ -37,7 +44,7 @@ export const RoomCanvas = ({ roomId }: { roomId: string }) => {
     gridSize,
     furnitures,
     selectedId,
-  } = useFurniture(yFurniture);
+  } = useFurniture(yFurniture, role);
 
   return (
     <div
@@ -45,7 +52,9 @@ export const RoomCanvas = ({ roomId }: { roomId: string }) => {
       className="w-full h-full"
       style={{ cursor: isPanning ? "grab" : "default" }}
     >
-      <FurnitureSidebar addFurniture={addFurniture} />
+      {role !== "viewer" && role !== null && (
+        <FurnitureSidebar addFurniture={addFurniture} />
+      )}
       <Stage
         ref={stageRef}
         width={size.width}
@@ -71,6 +80,7 @@ export const RoomCanvas = ({ roomId }: { roomId: string }) => {
                 ref={selectedId === furniture.id ? selectedFurnitureRef : null}
                 onClick={() => selectFurniture(furniture.id)}
                 key={furniture.id}
+                draggable={role !== "viewer" && role !== null}
                 {...furniture}
               />
             );

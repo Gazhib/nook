@@ -10,7 +10,7 @@ export const YJSservice = {
     message: RawData,
     doc: Doc,
     ws: WebSocket,
-    awareness: awarenessProtocol.Awareness
+    awareness: awarenessProtocol.Awareness,
   ) {
     try {
       const buffers = Array.isArray(message)

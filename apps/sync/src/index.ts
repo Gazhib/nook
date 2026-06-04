@@ -39,49 +39,64 @@ import { DATABASE_URL } from "./loadEnv";
 export const db = drizzle(DATABASE_URL, { schema });
 const wss = new WebSocketServer({ noServer: true });
 
-wss.on("connection", (ws: WebSocket, req: IncomingMessage, userId: string) => {
-  const roomId = req.url?.slice(1).split("?")[0];
+wss.on(
+  "connection",
+  async (ws: WebSocket, req: IncomingMessage, userId: string) => {
+    const roomId = req.url?.slice(1).split("?")[0];
 
-  if (!roomId) {
-    return;
-  }
-
-  const room = getDoc(roomId);
-  const { doc, awareness, conns } = room;
-  conns.add(ws);
-
-  WsRoomService.cancelEviction(room);
-  WsRoomService.startSaveInterval(roomId, room);
-
-  ws.on("message", (message: RawData) =>
-    YJScontroller.handleMessage(message, doc, ws, awareness)
-  );
-  ws.on("error", (err) => {
-    if (err.cause === "ECONNRESET") {
-      console.log("Connection closed");
-    } else {
-      console.error(err);
+    if (!roomId) {
+      return;
     }
-  });
-  ws.on("close", () => {
-    conns.delete(ws);
-    if (conns.size === 0) {
-      void WsRoomService.saveSnapshot(roomId, room);
-      WsRoomService.scheduleEviction(roomId, room);
-    }
-  });
 
-  try {
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, 0);
-    syncProtocol.writeSyncStep1(encoder, doc);
-    ws.send(encoding.toUint8Array(encoder));
-  } catch (err) {
-    console.error(`Failed to send initial sync for room ${roomId}`, err);
-    conns.delete(ws);
-    ws.close();
+    const room = getDoc(roomId);
+    const { doc, awareness, conns } = room;
+    conns.add(ws);
+
+    const userRole = await WsRoomService.getRole(roomId, userId);
+
+    WsRoomService.cancelEviction(room);
+    WsRoomService.startSaveInterval(roomId, room);
+
+    if (userRole === null) {
+      const isPublic = await WsRoomService.getAccessibility(roomId);
+      if (!isPublic) {
+        ws.close(1008, "forbidden");
+        conns.delete(ws);
+        return;
+      }
+    }
+
+    if (userRole !== "viewer")
+      ws.on("message", (message: RawData) =>
+        YJScontroller.handleMessage(message, doc, ws, awareness)
+      );
+    ws.on("error", (err) => {
+      if (err.cause === "ECONNRESET") {
+        console.log("Connection closed");
+      } else {
+        console.error(err);
+      }
+    });
+    ws.on("close", () => {
+      conns.delete(ws);
+      if (conns.size === 0) {
+        void WsRoomService.saveSnapshot(roomId, room);
+        WsRoomService.scheduleEviction(roomId, room);
+      }
+    });
+
+    try {
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, 0);
+      syncProtocol.writeSyncStep1(encoder, doc);
+      ws.send(encoding.toUint8Array(encoder));
+    } catch (err) {
+      console.error(`Failed to send initial sync for room ${roomId}`, err);
+      conns.delete(ws);
+      ws.close();
+    }
   }
-});
+);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
@@ -124,13 +139,6 @@ server.on(
     const token = Object.fromEntries(
       (cookieHeader ?? "").split(";").map((c) => c.trim().split("="))
     ).access_token;
-
-    console.log(
-      "Received WebSocket upgrade request for room",
-      roomId,
-      "with token",
-      !!token
-    );
 
     let userId;
 

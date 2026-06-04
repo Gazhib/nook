@@ -1,4 +1,4 @@
-import { FurnitureItem } from "@nook/shared";
+import { FurnitureItem, Role } from "@nook/shared";
 import { KonvaEventObject } from "konva/lib/Node";
 import type { Rect as KonvaRect } from "konva/lib/shapes/Rect";
 import type {
@@ -11,7 +11,10 @@ import * as Y from "yjs";
 
 const LOCAL_ORIGIN = Symbol("local");
 
-export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
+export const useFurniture = (
+  yFurniture: Y.Map<FurnitureItem>,
+  role: Role | null
+) => {
   const [furnitures, setFurnitures] = useState<FurnitureItem[]>([]);
 
   const transformRef = useRef<KonvaTransformer>(null);
@@ -24,6 +27,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
   const ydoc = yFurniture.doc;
 
   const mutateYFurniture = (newFurniture: FurnitureItem) => {
+    if (role === "viewer" || role === null) return;
     ydoc?.transact(() => {
       yFurniture.set(newFurniture.id, newFurniture);
     }, LOCAL_ORIGIN);
@@ -35,6 +39,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
   };
 
   const selectFurniture = (id: string) => {
+    if (role === "viewer" || role === null) return;
     setSelectedId(id);
   };
 
@@ -56,6 +61,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
 
   const onTransformEnd = (e: KonvaEventObject<Event>) => {
     if (!selectedId) return;
+    if (role === "viewer" || role === null) return;
 
     const node = e.target;
     if (!node) return;
@@ -88,6 +94,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
   };
 
   const onDragEnd = (e: KonvaEventObject<DragEvent>) => {
+    if (role === "viewer" || role === null) return;
     const newX = Math.round(e.target.x() / gridSize) * gridSize;
     const newY = Math.round(e.target.y() / gridSize) * gridSize;
 
@@ -117,13 +124,15 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
 
   useEffect(() => {
     if (transformRef.current && selectedFurnitureRef.current) {
+      if (role === "viewer" || role === null) return;
       transformRef.current.nodes([selectedFurnitureRef.current]);
       transformRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedId]);
+  }, [selectedId, role]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (role === "viewer" || role === null) return;
       if (e.key === "Delete" && selectedId) {
         ydoc?.transact(() => {
           yFurniture.delete(selectedId);
@@ -160,7 +169,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedId]);
+  }, [selectedId, role]);
 
   useEffect(() => {
     const sync = () => {
@@ -188,6 +197,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (role === "viewer" || role === null) return;
       if (e.ctrlKey && (e.key === "z" || e.key === "Z")) {
         undoManager.undo();
       } else if (e.ctrlKey && (e.key === "y" || e.key === "Y")) {
@@ -196,7 +206,7 @@ export const useFurniture = (yFurniture: Y.Map<FurnitureItem>) => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [role]);
 
   const handleClickOutside = () => {
     setSelectedId(null);

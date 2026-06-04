@@ -2,6 +2,7 @@ import { encodeStateAsUpdate } from "yjs";
 import { WsRoom } from "../model/wsRoomModel";
 import { roomRepository } from "../../repositories/roomRepository";
 import { deleteDoc } from "../model/YJSmodel";
+import { get } from "http";
 
 const SAVE_INTERVAL_MS = 30_000;
 const EMPTY_GRACE_MS = 10_000;
@@ -45,5 +46,15 @@ export const WsRoomService = {
       room.saveInterval = undefined;
       deleteDoc(roomId);
     }, EMPTY_GRACE_MS);
+  },
+
+  async getRole(roomId: string, userId: string) {
+    const role = await roomRepository.getRoomAccess(roomId, userId);
+    return role;
+  },
+
+  async getAccessibility(roomId: string) {
+    const accessibility = await roomRepository.getRoomAccessibility(roomId);
+    return accessibility;
   },
 };

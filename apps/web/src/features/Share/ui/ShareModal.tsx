@@ -3,6 +3,7 @@
 import { SketchButton } from "@/components/Button";
 import { Modal, Select } from "antd";
 import { useShare } from "../model/useShare";
+import { Role } from "@nook/shared";
 
 const selectRoleOptions = [
   { label: "editor", value: "editor" },
@@ -13,9 +14,11 @@ const selectRoleOptions = [
 export const ShareModal = ({
   open,
   onClose,
+  currentUserRole,
 }: {
   open: boolean;
   onClose: () => void;
+  currentUserRole: Role | null;
 }) => {
   const {
     visibility,

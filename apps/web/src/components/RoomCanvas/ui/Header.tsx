@@ -6,13 +6,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { client } from "@/services/client";
 import { getRoomNameService } from "@/services/roomServices";
+import { Role } from "@nook/shared";
 
 export const Header = ({
   onShare,
   roomId,
+  role,
 }: {
   onShare: () => void;
   roomId: string;
+  role: Role | null;
 }) => {
   const router = useRouter();
 
@@ -56,13 +59,18 @@ export const Header = ({
       <Wordmark onClick={() => router.push("/")} size={18} />
       <div className="h-5 w-px bg-hair" />
       <div className="flex items-center gap-1.5 font-display text-sm font-medium text-ink">
-        <input
-          className="bg-transparent focus:outline-none"
-          onFocus={onFocus}
-          onBlur={handleNameSubmit}
-          value={roomName}
-          onChange={handleNameChange}
-        />
+        {role === "viewer" ? (
+          <span className="bg-transparent focus:outline-none">{roomName}</span>
+        ) : (
+          <input
+            className="bg-transparent focus:outline-none"
+            onFocus={onFocus}
+            onBlur={handleNameSubmit}
+            value={roomName}
+            onChange={handleNameChange}
+          />
+        )}
+
         <span className="rounded-[3px] border border-hair px-[5px] py-0.5 font-mono text-[10px] text-muted">
           room/{roomId}
         </span>
