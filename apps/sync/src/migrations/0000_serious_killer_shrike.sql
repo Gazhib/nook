@@ -19,7 +19,8 @@ CREATE TABLE "rooms" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"owner_id" uuid NOT NULL,
 	"created_at" timestamp DEFAULT now(),
-	"typeOfAccessibility" "type_of_accessibility" DEFAULT 'private' NOT NULL
+	"typeOfAccessibility" "type_of_accessibility" DEFAULT 'private' NOT NULL,
+	"name" varchar(255) DEFAULT 'Untitled room' NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -28,7 +29,9 @@ CREATE TABLE "users" (
 	"created_at" timestamp DEFAULT now(),
 	"email" text NOT NULL,
 	"avatar_url" text,
-	"password" text NOT NULL
+	"password" text NOT NULL,
+	CONSTRAINT "users_username_unique" UNIQUE("username"),
+	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 ALTER TABLE "room_members" ADD CONSTRAINT "room_members_room_id_rooms_id_fk" FOREIGN KEY ("room_id") REFERENCES "public"."rooms"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

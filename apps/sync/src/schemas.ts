@@ -25,9 +25,9 @@ const bytea = customType<{ data: Buffer }>({
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  username: varchar("username", { length: 24 }).notNull(),
+  username: varchar("username", { length: 24 }).notNull().unique(),
   createdAt: timestamp("created_at").defaultNow(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   avatarURL: text("avatar_url"),
   password: text("password").notNull(),
 });

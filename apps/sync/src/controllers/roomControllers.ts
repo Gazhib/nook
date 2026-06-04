@@ -92,10 +92,17 @@ export const roomControllers = {
 
   async setRoomAccessibility(c: Context) {
     const roomId = c.req.param("roomId");
+    const { accessibility } = await readJsonBody(c);
 
     assertRoomId(roomId);
 
-    await roomService.setRoomAccessibility(roomId);
+    if (accessibility !== "private" && accessibility !== "public") {
+      throw new BadRequestError(
+        'Field "accessibility" must be either "private" or "public"'
+      );
+    }
+
+    await roomService.setRoomAccessibility(roomId, accessibility);
     return c.json({ message: "Room accessibility has changed" }, 200);
   },
 
@@ -124,9 +131,14 @@ export const roomControllers = {
 
     const inviterId = c.get("userId");
 
-    await roomService.inviteUser(roomId, username, role, inviterId);
+    const user = await roomService.inviteUser(
+      roomId,
+      username,
+      role,
+      inviterId
+    );
 
-    return c.json({ message: "User invited successfully" }, 200);
+    return c.json({ message: "User invited successfully", user }, 200);
   },
 
   async getRooms(c: Context) {
@@ -163,5 +175,40 @@ export const roomControllers = {
     const name = await roomService.getRoomName(roomId);
 
     return c.json({ name, message: "Room name found successfully" }, 200);
+  },
+
+  async changeRole(c: Context) {
+    const userId = c.req.param("userId");
+    const roomId = c.req.param("roomId");
+
+    if (!userId || userId.trim() === "") {
+      throw new BadRequestError("Invalid username");
+    }
+    assertRoomId(roomId);
+
+    const changerId = c.get("userId");
+    const { role } = await readJsonBody(c);
+
+    if (!role || typeof role !== "string")
+      throw new BadRequestError("No role was provided");
+
+    await roomService.changeRole(roomId, userId, role, changerId);
+
+    return c.json({ message: "Role was changed successfully", role }, 200);
+  },
+
+  async kickUser(c: Context) {
+    const userId = c.req.param("userId");
+    const roomId = c.req.param("roomId");
+
+    if (!userId || userId.trim() === "") {
+      throw new BadRequestError("Invalid username");
+    }
+    assertRoomId(roomId);
+
+    const kickerId = c.get("userId");
+    await roomService.kickUser(roomId, userId, kickerId);
+
+    return c.json({ message: "User has been successfully kicked" }, 200);
   },
 };

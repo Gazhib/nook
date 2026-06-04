@@ -4,7 +4,11 @@ import { SketchButton } from "@/components/Button";
 import { Modal, Select } from "antd";
 import { useShare } from "../model/useShare";
 
-const RoleOptions = ["Editor", "Owner", "Viewer"];
+const selectRoleOptions = [
+  { label: "editor", value: "editor" },
+  { label: "owner", value: "owner" },
+  { label: "viewer", value: "viewer" },
+];
 
 export const ShareModal = ({
   open,
@@ -25,6 +29,8 @@ export const ShareModal = ({
     setRole,
     members,
     handleInvite,
+    handleChangeRole,
+    handleRemove,
   } = useShare();
 
   return (
@@ -104,9 +110,7 @@ export const ShareModal = ({
                   className="flex-1 rounded-md border border-hair bg-paper px-2.5 py-2 font-mono text-xs text-ink-2 truncate"
                 />
                 <Select
-                  options={RoleOptions.map((role) => {
-                    return { label: role, value: role };
-                  })}
+                  options={selectRoleOptions}
                   onChange={(value) => setRole(value)}
                   value={role}
                   className="flex items-center gap-1.5 
@@ -139,7 +143,27 @@ export const ShareModal = ({
             >
               {/* <SketchAvatar size={28} label={m.n[0]} color={m.c} /> */}
               <div className="flex-1 text-[13px] text-ink">{m.username}</div>
-              <div className="text-xs text-ink-2">{m.role}</div>
+              {/* gotta change the owner to the own editor type shit */}
+              {m.role !== "owner" ? (
+                <>
+                  <Select
+                    options={selectRoleOptions}
+                    value={m.role}
+                    className="text-xs text-ink-2"
+                    onChange={(value) => handleChangeRole(m.userId, value)}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remove ${m.username}`}
+                    onClick={() => handleRemove(m.userId)}
+                    className="cursor-pointer rounded-md border border-hair px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  >
+                    Remove
+                  </button>
+                </>
+              ) : (
+                <div className="text-xs text-ink-2">{m.role}</div>
+              )}
             </div>
           ))}
         </div>

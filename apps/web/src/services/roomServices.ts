@@ -50,6 +50,7 @@ export interface RoomMember {
   userId: string;
   role: RoomRole;
   username: string;
+  changeAble: boolean;
 }
 
 interface GetRoomMembersProps {
@@ -71,12 +72,27 @@ export const inviteUserToRoomService = async (
   username: string,
   role: string
 ) => {
-  await client.post(`/rooms/${roomId}/${username}/invite`, {
-    role,
-  });
+  const res = await client.post<{ message: string; user: { id: string } }>(
+    `/rooms/${roomId}/${username}/invite`,
+    {
+      role,
+    }
+  );
+
+  if (res instanceof ApiError) {
+    throw res;
+  } else {
+    console.log(res);
+    return res;
+  }
 };
-export const changeRoomAccessibilityService = async (roomId: string) => {
-  await client.get(`/rooms/${roomId}/accessibility`);
+export const changeRoomAccessibilityService = async (
+  roomId: string,
+  accessibility: "private" | "public"
+) => {
+  await client.post(`/rooms/${roomId}/accessibility`, {
+    accessibility,
+  });
 };
 
 export const getRoomAccessService = async (roomId: string) => {
@@ -102,4 +118,20 @@ export const getRoomNameService = async (roomId: string) => {
     `/rooms/${roomId}/name`
   );
   return res.name;
+};
+
+export const changeUserRoleService = async (
+  roomId: string,
+  userId: string,
+  role: string
+) => {
+  const res = await client.post(`/rooms/${roomId}/${userId}/role`, {
+    role,
+  });
+
+  return res;
+};
+
+export const kickUserService = async (roomId: string, userId: string) => {
+  await client.get(`/rooms/${roomId}/${userId}/kick`);
 };

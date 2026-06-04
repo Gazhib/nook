@@ -38,3 +38,7 @@ export interface UsersAwareness {
   clientId: number;
   user: User;
 }
+
+export type Role = "viewer" | "editor" | "owner";
+
+export type Accessibility = "private" | "public";

@@ -26,8 +26,6 @@ export const authRepository = {
         .values({ username, password: hashedPassword, email })
         .returning({ id: users.id });
     } catch (err) {
-      // Surface a registered username/email as a clean 409 instead of letting
-      // the raw driver error bubble up as a generic 500.
       if (isUniqueViolation(err)) {
         throw new ConflictError("Username or email is already taken");
       }

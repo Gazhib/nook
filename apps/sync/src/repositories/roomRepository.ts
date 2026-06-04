@@ -2,7 +2,7 @@ import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { db } from "..";
 import { ConflictError, NotFoundError, RoomError } from "../errors";
 import { room_snapshots, roomMembers, rooms, users } from "../schemas";
-
+import { Role, Accessibility } from "@nook/shared/index";
 /** Postgres unique-violation error code. */
 const PG_UNIQUE_VIOLATION = "23505";
 
@@ -16,10 +16,6 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 type Executor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-export type Role = "viewer" | "editor" | "owner";
-
-export type Accessibility = "private" | "public";
 
 const MAX_SNAPSHOTS_PER_ROOM = 10;
 
@@ -111,24 +107,10 @@ export const roomRepository = {
     return room?.typeOfAccessibility;
   },
 
-  async setRoomAccessibility(roomId: string) {
-    const typeOfAccessibility = await db
-      .select({ typeOfAccessibility: rooms.typeOfAccessibility })
-      .from(rooms)
-      .where(eq(rooms.id, roomId))
-      .then((res) => res[0]?.typeOfAccessibility);
-
-    let neededAccessibility: Accessibility;
-
-    if (typeOfAccessibility === "private") {
-      neededAccessibility = "public";
-    } else {
-      neededAccessibility = "private";
-    }
-
+  async setRoomAccessibility(roomId: string, accessibility: Accessibility) {
     await db
       .update(rooms)
-      .set({ typeOfAccessibility: neededAccessibility })
+      .set({ typeOfAccessibility: accessibility })
       .where(eq(rooms.id, roomId));
   },
 
@@ -172,6 +154,7 @@ export const roomRepository = {
         role: role.toLocaleLowerCase() as Role,
         roomId,
       });
+      return user;
     } catch (err) {
       if (isUniqueViolation(err)) {
         throw new ConflictError("User is already a member of this room");
@@ -210,5 +193,22 @@ export const roomRepository = {
     if (!room) throw new NotFoundError("Room not found");
 
     return room.name;
+  },
+
+  async changeRole(roomId: string, userId: string, role: Role) {
+    await db
+      .update(roomMembers)
+      .set({ role: role })
+      .where(
+        and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId))
+      );
+  },
+
+  async kickUserFromRoom(roomId: string, userId: string) {
+    await db
+      .delete(roomMembers)
+      .where(
+        and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId))
+      );
   },
 };

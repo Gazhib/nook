@@ -1,5 +1,6 @@
 import { BadRequestError, ForbiddenError, NotFoundError } from "../errors";
-import { Role, roomRepository } from "../repositories/roomRepository";
+import { roomRepository } from "../repositories/roomRepository";
+import { Role, Accessibility } from "@nook/shared/index";
 
 const VALID_ROLES: readonly Role[] = ["viewer", "editor", "owner"];
 
@@ -40,8 +41,8 @@ export const roomService = {
     throw new NotFoundError("You have no access to the room");
   },
 
-  async setRoomAccessibility(roomId: string) {
-    await roomRepository.setRoomAccessibility(roomId);
+  async setRoomAccessibility(roomId: string, accessibility: Accessibility) {
+    await roomRepository.setRoomAccessibility(roomId, accessibility);
   },
 
   async getRoomMembers(roomId: string) {
@@ -70,7 +71,12 @@ export const roomService = {
       );
     }
 
-    await roomRepository.inviteUser(roomId, username, normalizedRole as Role);
+    const user = await roomRepository.inviteUser(
+      roomId,
+      username,
+      normalizedRole as Role
+    );
+    return user;
   },
 
   async getRoomsForUser(userId: string) {
@@ -91,5 +97,36 @@ export const roomService = {
   async getRoomName(roomId: string) {
     const name = await roomRepository.getRoomName(roomId);
     return name;
+  },
+
+  async changeRole(
+    roomId: string,
+    userId: string,
+    role: string,
+    changerId: string
+  ) {
+    const changerRole = await this.getRoomRole(roomId, changerId);
+
+    const normalizedRole = role.toLowerCase();
+
+    if (!VALID_ROLES.includes(normalizedRole as Role)) {
+      throw new BadRequestError(
+        `Role must be one of: ${VALID_ROLES.join(", ")}`
+      );
+    }
+
+    if (changerRole !== "owner")
+      throw new ForbiddenError("Only the owner can change role in the room");
+
+    await roomRepository.changeRole(roomId, userId, normalizedRole as Role);
+  },
+
+  async kickUser(roomId: string, userId: string, kickerId: string) {
+    const kickerRole = await this.getRoomRole(roomId, kickerId);
+
+    if (kickerRole !== "owner")
+      throw new ForbiddenError("Only the owner can kick from the room");
+
+    await roomRepository.kickUserFromRoom(roomId, userId);
   },
 };

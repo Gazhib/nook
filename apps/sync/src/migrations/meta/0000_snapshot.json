@@ -1,5 +1,5 @@
 {
-  "id": "b3f1ea35-87d7-4d70-85b8-24ba75c7c3a7",
+  "id": "f825eb41-f69e-43c8-a0e9-a1897fceec13",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -162,6 +162,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'private'"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Untitled room'"
         }
       },
       "indexes": {},
@@ -232,7 +239,22 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "users_username_unique": {
+          "name": "users_username_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
+          ]
+        },
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

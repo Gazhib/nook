@@ -25,12 +25,6 @@ export const YJSservice = {
       const encoder = encoding.createEncoder();
       const messageType = decoding.readVarUint(decoder);
 
-      console.log(
-        "Received message of type",
-        messageType,
-        "with length",
-        buffers.length
-      );
 
       if (messageType === 0) {
         // sync
