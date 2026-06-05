@@ -4,10 +4,22 @@ import { SketchButton } from "@/components/Button";
 import { Wordmark } from "@/components/Logo";
 import { TopDownRoom } from "@/components/TopDownRoom";
 import { createRoomService } from "@/services/roomServices";
+import { getMeService } from "@/services/authService";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const router = useRouter();
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const me = await getMeService();
+      setIsAuthenticated(!!me);
+    };
+    checkAuth();
+  }, []);
 
   const handleStartRoom = async () => {
     const roomId = await createRoomService();
@@ -30,9 +42,19 @@ export default function Home() {
           <div className="font-body text-muted text-[13px]">
             built by one person, not a company
           </div>
-          <SketchButton onClick={handleGoToAuth} ghost className="px-3 py-2">
-            Log in
-          </SketchButton>
+          {isAuthenticated ? (
+            <SketchButton
+              onClick={handleGoToMyRooms}
+              ghost
+              className="px-3 py-2"
+            >
+              My rooms
+            </SketchButton>
+          ) : (
+            <SketchButton onClick={handleGoToAuth} ghost className="px-3 py-2">
+              Log in
+            </SketchButton>
+          )}
         </div>
       </div>
 

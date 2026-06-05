@@ -7,6 +7,7 @@ import { FurnitureSidebar } from "./FurnitureSidebar";
 import { Grid } from "./Grid";
 import { useFurniture } from "../model/useFurniture";
 import { useViewPort } from "../model/useViewPort";
+import { isEditableTarget } from "../model/isEditableTarget";
 import { useYjsRoom } from "../model/useYjsRoom";
 import { usePresence } from "../model/usePresence";
 import { notFound } from "next/navigation";
@@ -47,6 +48,7 @@ export const RoomCanvas = ({
     furnitures,
     selectedId,
   } = useFurniture(yFurniture, role, getViewportCenter);
+
 
   return (
     <div

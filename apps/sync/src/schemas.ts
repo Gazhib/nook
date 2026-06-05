@@ -1,14 +1,13 @@
 import {
-  pgTable,
-  serial,
-  timestamp,
-  integer,
   customType,
-  primaryKey,
   pgEnum,
-  varchar,
-  uuid,
+  pgTable,
+  primaryKey,
+  serial,
   text,
+  timestamp,
+  uuid,
+  varchar
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["editor", "owner", "viewer"]);
@@ -67,3 +66,15 @@ export const roomMembers = pgTable(
     pk: primaryKey({ columns: [t.roomId, t.userId] }),
   })
 );
+
+export const comments = pgTable("comments", {
+  // `comments` table: id, room_id,
+  // furniture_id (nullable for room-level comments), user_id, body,
+  // created_at, resolved_at.
+  id: uuid("id").defaultRandom().primaryKey(),
+  roomId: uuid("room_id")
+    .notNull()
+    .references(() => rooms.id, { onDelete: "cascade" }),
+  furniture_id: uuid("room_id")
+
+});

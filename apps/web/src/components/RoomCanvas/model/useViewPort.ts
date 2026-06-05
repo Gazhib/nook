@@ -1,5 +1,6 @@
 import { Stage } from "konva/lib/Stage";
 import { RefObject, useEffect, useRef, useState } from "react";
+import { isEditableTarget } from "./isEditableTarget";
 
 export const useViewPort = (stageRef: RefObject<Stage | null>) => {
   useEffect(() => {
@@ -39,6 +40,8 @@ export const useViewPort = (stageRef: RefObject<Stage | null>) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't hijack Space while the user is typing (e.g. the room-name input).
+      if (isEditableTarget(e.target)) return;
       if (e.code === "Space" && !e.repeat) {
         e.preventDefault();
         isSpaceHeld.current = true;

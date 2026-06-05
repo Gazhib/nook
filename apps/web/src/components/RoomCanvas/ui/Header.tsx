@@ -8,6 +8,7 @@ import { client } from "@/services/client";
 import { getRoomNameService } from "@/services/roomServices";
 import { Role } from "@nook/shared";
 import { useConnectionStore } from "@/stores/useConnectionStore";
+import toast from "react-hot-toast";
 
 export const Header = ({
   onShare,
@@ -36,7 +37,6 @@ export const Header = ({
   useEffect(() => {
     const fetchRoomName = async () => {
       const res = await getRoomNameService(roomId);
-      console.log(res);
       setRoomName(res);
     };
     fetchRoomName();
@@ -51,9 +51,11 @@ export const Header = ({
   const handleNameSubmit = async () => {
     if (bouncingRef.current) clearTimeout(bouncingRef.current);
 
-    bouncingRef.current = setTimeout(() => {
+    bouncingRef.current = setTimeout(async () => {
       bouncingRef.current = null;
-      client.post(`/rooms/${roomId}/rename`, { newName: roomName });
+      await client.post(`/rooms/${roomId}/rename`, {
+        newName: roomName,
+      });
     }, 2000);
   };
 
@@ -69,7 +71,7 @@ export const Header = ({
       <Wordmark onClick={() => router.push("/")} size={18} />
       <div className="h-5 w-px bg-hair" />
       <div className="flex items-center gap-1.5 font-display text-sm font-medium text-ink">
-        {role === "viewer" ? (
+        {role !== "owner" ? (
           <span className="bg-transparent focus:outline-none">{roomName}</span>
         ) : (
           <input

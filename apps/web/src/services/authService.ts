@@ -37,6 +37,17 @@ export const loginService = async ({
   }
 };
 
+export const getMeService = async () => {
+  try {
+    const me = await client.get("/auth/me", {
+      credentials: "include",
+    });
+    return me;
+  } catch {
+    return null;
+  }
+};
+
 export const meService = async (cookie?: string) => {
   try {
     const me = await client.get("/auth/me", {

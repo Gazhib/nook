@@ -9,6 +9,7 @@ import { Stage } from "konva/lib/Stage";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import * as Y from "yjs";
+import { isEditableTarget } from "./isEditableTarget";
 
 const LOCAL_ORIGIN = Symbol("local");
 
@@ -140,6 +141,7 @@ export const useFurniture = (
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target)) return;
       if (role === "viewer" || role === null) return;
       if (e.key === "Delete" && selectedId) {
         ydoc?.transact(() => {
