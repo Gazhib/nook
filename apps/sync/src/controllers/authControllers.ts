@@ -5,8 +5,10 @@ import { setCookie } from "hono/cookie";
 import { BadRequestError } from "../errors";
 import { readJsonBody } from "./roomControllers";
 
-
-export function requireString(body: Record<string, unknown>, field: string): string {
+export function requireString(
+  body: Record<string, unknown>,
+  field: string
+): string {
   const value = body[field];
   if (typeof value !== "string") {
     throw new BadRequestError(`Field "${field}" is required`);
@@ -31,7 +33,12 @@ export const authControllers = {
     const userId = await authService.registration(username, email, password);
     const token = await generateAndSetAccessToken({ userId });
 
-    setCookie(c, "access_token", token);
+    setCookie(c, "access_token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
 
     return c.json({ message: "User was created successfully", username }, 200);
   },
@@ -44,7 +51,12 @@ export const authControllers = {
     const userId = await authService.login(username, password);
 
     const token = await generateAndSetAccessToken({ userId });
-    setCookie(c, "access_token", token);
+    setCookie(c, "access_token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
 
     return c.json({ message: "Login was successful", username }, 200);
   },

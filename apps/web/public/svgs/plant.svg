@@ -1,9 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
-<!-- foliage -->
-<path d="M32 8 C20 14 18 28 26 34 C18 30 14 38 22 40 L42 40 C50 38 46 30 38 34 C46 28 44 14 32 8 Z" fill="#798C70"/>
-<path d="M32 8 C28 16 28 28 32 40 C36 28 36 16 32 8 Z" fill="#596752" opacity="0.55"/>
-<path d="M32 12 C26 18 25 27 30 33" stroke="#A1AE9A" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.7"/>
-<!-- pot -->
-<path d="M22 40 h20 l-3 14 h-14 z" fill="#9A6A4A"/>
-<rect x="20" y="38" width="24" height="5" rx="2" fill="#7A4F35"/>
+<circle cx="32" cy="33" r="17" fill="#7A4F35"/>
+<circle cx="32" cy="33" r="14" fill="#4A3A2C"/>
+<g transform="rotate(0.0 32 33)"><ellipse cx="32" cy="22" rx="5.5" ry="11" fill="#798C70"/></g><g transform="rotate(51.4 32 33)"><ellipse cx="32" cy="22" rx="5.5" ry="11" fill="#596752"/></g><g transform="rotate(102.9 32 33)"><ellipse cx="32" cy="22" rx="5.5" ry="11" fill="#798C70"/></g><g transform="rotate(154.3 32 33)"><ellipse cx="32" cy="22" rx="5.5" ry="11" fill="#596752"/></g><g transform="rotate(205.7 32 33)"><ellipse cx="32" cy="22" rx="5.5" ry="11" fill="#798C70"/></g><g transform="rotate(257.1 32 33)"><ellipse cx="32" cy="22" rx="5.5" ry="11" fill="#596752"/></g><g transform="rotate(308.6 32 33)"><ellipse cx="32" cy="22" rx="5.5" ry="11" fill="#798C70"/></g>
+<circle cx="32" cy="33" r="4.5" fill="#A3B09D"/>
 </svg>

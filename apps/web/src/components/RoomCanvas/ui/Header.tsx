@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { client } from "@/services/client";
 import { getRoomNameService } from "@/services/roomServices";
 import { Role } from "@nook/shared";
+import { useConnectionStore } from "@/stores/useConnectionStore";
 
 export const Header = ({
   onShare,
@@ -22,6 +23,15 @@ export const Header = ({
   const [roomName, setRoomName] = useState("");
 
   const bouncingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const connection = useConnectionStore((state) => state.connection);
+
+  const connectionMeta: Record<string, { label: string; color: string }> = {
+    connected: { label: "Connected", color: "#7A8F6B" },
+    connecting: { label: "Connecting", color: "#C4A97D" },
+    disconnected: { label: "Offline", color: "#B8563E" },
+  };
+  const status = connectionMeta[connection] ?? connectionMeta.connecting;
 
   useEffect(() => {
     const fetchRoomName = async () => {
@@ -76,10 +86,19 @@ export const Header = ({
         </span>
       </div>
       <div className="flex-1" />
-      <div className="mr-2 flex">
-        {/* <SketchAvatar size={26} label="A" color="#7A8F6B" ring /> */}
-        {/* <div className="-ml-1.5"><SketchAvatar size={26} label="M" color="#B8563E" /></div> */}
-        {/* <div className="-ml-1.5"><SketchAvatar size={26} label="J" color="#8a7ba0" /></div> */}
+      <div
+        className="mr-2 flex items-center gap-1.5 rounded-full border border-hair px-2.5 py-1 font-display text-xs font-medium text-muted"
+        title={status.label}
+        aria-live="polite"
+      >
+        <span
+          className={`h-2 w-2 rounded-full ${
+            connection === "connecting" ? "animate-pulse" : ""
+          }`}
+          style={{ backgroundColor: status.color }}
+          aria-hidden="true"
+        />
+        {status.label}
       </div>
       <SketchButton onClick={onShare} primary className="cursor-pointer">
         <svg

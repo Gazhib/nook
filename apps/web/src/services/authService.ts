@@ -37,10 +37,15 @@ export const loginService = async ({
   }
 };
 
-export const me = async () => {
+export const meService = async (cookie?: string) => {
   try {
     const me = await client.get("/auth/me", {
       credentials: "include",
+      // Next.js middleware runs server-side, where `credentials: "include"`
+      // does nothing — there is no browser cookie jar. The incoming request's
+      // cookies must be forwarded explicitly so the backend can read
+      // `access_token`.
+      headers: cookie ? { Cookie: cookie } : undefined,
     });
     return me;
   } catch {

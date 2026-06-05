@@ -5,6 +5,7 @@ import type {
   Box,
   Transformer as KonvaTransformer,
 } from "konva/lib/shapes/Transformer";
+import { Stage } from "konva/lib/Stage";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import * as Y from "yjs";
@@ -13,7 +14,8 @@ const LOCAL_ORIGIN = Symbol("local");
 
 export const useFurniture = (
   yFurniture: Y.Map<FurnitureItem>,
-  role: Role | null
+  role: Role | null,
+  getViewportCenter: (stage: Stage) => { x: number; y: number }
 ) => {
   const [furnitures, setFurnitures] = useState<FurnitureItem[]>([]);
 
@@ -34,6 +36,12 @@ export const useFurniture = (
   };
 
   const addFurniture = (furniture: FurnitureItem) => {
+    const { x, y } = getViewportCenter(
+      (transformRef.current as any).getStage()
+    );
+
+    furniture.position = { x, y };
+
     const newFurniture = { ...furniture, id: crypto.randomUUID() };
     mutateYFurniture(newFurniture);
   };
@@ -197,10 +205,11 @@ export const useFurniture = (
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (role === "viewer" || role === null) return;
       if (e.ctrlKey && (e.key === "z" || e.key === "Z")) {
+        if (role === "viewer" || role === null) return;
         undoManager.undo();
       } else if (e.ctrlKey && (e.key === "y" || e.key === "Y")) {
+        if (role === "viewer" || role === null) return;
         undoManager.redo();
       }
     };

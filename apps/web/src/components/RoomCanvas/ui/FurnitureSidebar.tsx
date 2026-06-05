@@ -13,12 +13,15 @@ const FURNITURE = [
   { type: "Lamp", width: 20, height: 20, color: "#C4A97D" },
   { type: "Rug", width: 120, height: 80, color: "#C9B8A5" },
   { type: "Plant", width: 25, height: 25, color: "#7A8B6F" },
+  { type: "Wall", width: 140, height: 24, color: "#CDBFAE" },
 ];
 
 export const FurnitureSidebar = ({
   addFurniture,
+  toggleWebSocket,
 }: {
   addFurniture: (piece: FurnitureItem) => void;
+  toggleWebSocket: () => void;
 }) => {
   return (
     <div className="fixed left-5 top-1/2 -translate-y-1/2 z-50 bg-paper border border-hair rounded-xl p-3 shadow-md flex flex-col gap-0.5 min-w-36">
@@ -26,7 +29,12 @@ export const FurnitureSidebar = ({
         Furniture
       </p>
       {FURNITURE.map((item) => (
-        <FurnitureTag onClick = {addFurniture} key={item.type} {...item} />
+        <FurnitureTag
+          onClick={addFurniture}
+          key={item.type}
+          {...item}
+          toggleWebsocket={toggleWebSocket}
+        />
       ))}
     </div>
   );

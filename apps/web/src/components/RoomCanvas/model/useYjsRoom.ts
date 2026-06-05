@@ -3,8 +3,10 @@ import {
   getRoomStateService,
   saveRoomStateService,
 } from "@/services/roomServices";
+import { useConnectionStore } from "@/stores/useConnectionStore";
 import { FurnitureItem, Room, UsersAwareness } from "@nook/shared";
 import { useEffect, useRef, useState } from "react";
+import { IndexeddbPersistence } from "y-indexeddb";
 
 import { Awareness } from "y-protocols/awareness";
 import { WebsocketProvider } from "y-websocket";
@@ -12,6 +14,7 @@ import * as Y from "yjs";
 
 export const useYjsRoom = ({ roomId }: { roomId: string }) => {
   const [ydoc] = useState(() => new Y.Doc());
+
   const [yFurniture] = useState(() => ydoc.getMap<FurnitureItem>("furniture"));
   const [isRoomMissing, setIsRoomMissing] = useState(false);
 
@@ -19,9 +22,24 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
 
   const awarenessRef = useRef<Awareness | null>(null);
 
+  const connection = useConnectionStore((state) => state.connection);
+  const setConnection = useConnectionStore((state) => state.setConnection);
+
   const saveNewSnapshot = (roomId: string) => {
     saveRoomStateService(roomId, Buffer.from(Y.encodeStateAsUpdate(ydoc)));
   };
+
+  useEffect(() => {
+    const p = new IndexeddbPersistence(roomId, ydoc);
+
+    p.whenSynced.then(() => {
+      console.log("Loaded data from IndexedDB");
+    });
+
+    return () => {
+      p.destroy();
+    };
+  }, [roomId, ydoc]);
 
   useEffect(() => {
     const getRoomState = async () => {
@@ -47,6 +65,8 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
     getRoomState();
   }, [roomId]);
 
+  const providerRef = useRef<WebsocketProvider | null>(null);
+
   useEffect(() => {
     const provider = new WebsocketProvider(
       "ws://localhost:1234",
@@ -57,11 +77,19 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
       }
     );
 
+    providerRef.current = provider;
+
     const awareness = provider.awareness;
 
-    provider.on("status", (event) => {
-      console.log("WebSocket connection status:", event.status);
-    });
+    const onStatus = ({
+      status,
+    }: {
+      status: "connecting" | "connected" | "disconnected";
+    }) => {
+      setConnection(status);
+    };
+
+    provider.on("status", onStatus);
 
     awareness.on("change", (_changes: any) => {
       const states = Array.from(awareness.getStates().entries())
@@ -81,6 +109,16 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
     };
   }, []);
 
+  const toggleWebsocket = () => {
+    if (providerRef.current) {
+      if (providerRef.current.wsconnected) {
+        providerRef.current.disconnect();
+      } else {
+        providerRef.current.connect();
+      }
+    }
+  };
+
   return {
     ydoc,
     yFurniture,
@@ -88,5 +126,7 @@ export const useYjsRoom = ({ roomId }: { roomId: string }) => {
     users,
     saveNewSnapshot,
     isRoomMissing,
+    toggleWebsocket,
+    connection,
   };
 };

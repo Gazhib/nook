@@ -118,5 +118,13 @@ export const useViewPort = (stageRef: RefObject<Stage | null>) => {
     return () => window.removeEventListener("resize", handleResize);
   }, [containerRef]);
 
-  return { isPanning, containerRef, size };
+  const getViewportCenter = (stage: Stage) => {
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    return transform.point({
+      x: stage.width() / 2,
+      y: stage.height() / 2,
+    });
+  };
+
+  return { isPanning, containerRef, size, getViewportCenter };
 };

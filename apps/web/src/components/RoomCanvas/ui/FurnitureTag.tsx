@@ -7,6 +7,7 @@ interface FurnitureProps {
   color: string;
   onDragStart?: (e: React.DragEvent) => void;
   onClick?: (piece: FurnitureItem) => void;
+  toggleWebsocket?: () => void;
 }
 
 export const FurnitureTag = ({
@@ -16,12 +17,13 @@ export const FurnitureTag = ({
   color,
   onDragStart,
   onClick,
+  toggleWebsocket,
 }: FurnitureProps) => {
   return (
     <div
       draggable
       // onDragStart={onDragStart}
-      onClick={() =>
+      onClick={() => {
         onClick?.({
           id: "",
           type,
@@ -30,8 +32,8 @@ export const FurnitureTag = ({
           height,
           color,
           rotation: 0,
-        })
-      }
+        });
+      }}
       title={`${type} (${width}×${height})`}
       className="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-fill-2 transition-colors group"
     >

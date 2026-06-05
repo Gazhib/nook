@@ -18,12 +18,21 @@ export default function Home() {
     router.push("/rooms");
   };
 
+  const handleGoToAuth = () => {
+    router.push("/auth");
+  };
+
   return (
     <main className="bg-paper relative box-border flex min-h-screen max-w-screen flex-col px-[40px] py-[32px]">
       <div className="mb-14 flex items-center justify-between">
         <Wordmark size={22} />
-        <div className="font-body text-muted text-[13px]">
-          built by one person, not a company
+        <div className="flex items-center gap-4">
+          <div className="font-body text-muted text-[13px]">
+            built by one person, not a company
+          </div>
+          <SketchButton onClick={handleGoToAuth} ghost className="px-3 py-2">
+            Log in
+          </SketchButton>
         </div>
       </div>
 

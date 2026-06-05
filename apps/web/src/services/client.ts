@@ -33,12 +33,9 @@ async function request<T>(
 
   if (!res.ok) {
     if (res.status === 401) {
-      const errorBody = await res.json().catch(() => ({}));
-      const message =
-        (errorBody as { message?: string }).message ??
-        `Request failed: ${res.status}`;
-      console.log(message);
-      window.location.href = "/auth";
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth";
+      }
     } else if (res.status === 400) {
       const errorBody = await res.json().catch(() => ({}));
       const message = errorBody.error ?? `Bad request: ${res.status}`;

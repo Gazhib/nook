@@ -21,13 +21,15 @@ export const RoomCanvas = ({
 }) => {
   const stageRef = useRef<StageType | null>(null);
 
-  const { yFurniture, users, awarenessRef, isRoomMissing } = useYjsRoom({
-    roomId: roomId,
-  });
+  const { yFurniture, users, awarenessRef, isRoomMissing, toggleWebsocket } =
+    useYjsRoom({
+      roomId: roomId,
+    });
 
   if (isRoomMissing) notFound();
 
-  const { isPanning, size, containerRef } = useViewPort(stageRef);
+  const { isPanning, size, containerRef, getViewportCenter } =
+    useViewPort(stageRef);
 
   usePresence(stageRef, awarenessRef);
 
@@ -44,7 +46,7 @@ export const RoomCanvas = ({
     gridSize,
     furnitures,
     selectedId,
-  } = useFurniture(yFurniture, role);
+  } = useFurniture(yFurniture, role, getViewportCenter);
 
   return (
     <div
@@ -53,7 +55,10 @@ export const RoomCanvas = ({
       style={{ cursor: isPanning ? "grab" : "default" }}
     >
       {role !== "viewer" && role !== null && (
-        <FurnitureSidebar addFurniture={addFurniture} />
+        <FurnitureSidebar
+          addFurniture={addFurniture}
+          toggleWebSocket={toggleWebsocket}
+        />
       )}
       <Stage
         ref={stageRef}
