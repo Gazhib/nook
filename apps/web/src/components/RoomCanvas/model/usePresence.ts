@@ -3,8 +3,6 @@ import { Stage } from "konva/lib/Stage";
 import { RefObject, useEffect, useState } from "react";
 import { Awareness } from "y-protocols/awareness";
 
-const userNames = ["Batyr", "Alish", "Mon ceau", "Rusik"];
-
 const colors = [
   "#30bced",
   "#6eeb83",
@@ -18,38 +16,56 @@ const colors = [
 
 export const usePresence = (
   stageRef: RefObject<Stage | null>,
-  awarenessRef: RefObject<Awareness | null>
+  awarenessRef: RefObject<Awareness | null>,
 ) => {
-  const randomNumber = Number((Math.random() * 10).toFixed()) % colors.length;
-  const color = colors[randomNumber];
-  const [username, setUsername] = useState<string>("");
+  const [color] = useState(
+    () => colors[Math.floor(Math.random() * colors.length)],
+  );
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
+    let active = true;
     const fetchUserData = async () => {
       try {
         const userData = await getUserByIdService();
-        setUsername(userData.username);
+        if (active) setUsername(userData.username);
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
     };
-    fetchUserData();
+    void fetchUserData();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const mousePos = stageRef.current?.getRelativePointerPosition();
-      if (mousePos === null) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const container = stage.container();
+    const handlePointerMove = (event: PointerEvent) => {
+      stage.setPointersPositions(event);
+      const mousePos = stage.getRelativePointerPosition();
+      if (
+        !mousePos ||
+        !Number.isFinite(mousePos.x) ||
+        !Number.isFinite(mousePos.y)
+      )
+        return;
       awarenessRef.current?.setLocalStateField("user", {
         name: username,
         color,
         mousePos,
       });
     };
-
-    window.addEventListener("mousemove", handleMouseMove);
+    const clearPointer = () =>
+      awarenessRef.current?.setLocalStateField("user", null);
+    container.addEventListener("pointermove", handlePointerMove);
+    container.addEventListener("pointerleave", clearPointer);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
+      container.removeEventListener("pointermove", handlePointerMove);
+      container.removeEventListener("pointerleave", clearPointer);
+      clearPointer();
     };
-  }, [username]);
+  }, [username, color, stageRef, awarenessRef]);
 };

@@ -38,6 +38,8 @@ export const Furniture = ({
   const image = useFurnitureImage(type);
 
   return (
+    // Konva draws a canvas node rather than a DOM image; the canvas has its own label.
+    // eslint-disable-next-line jsx-a11y/alt-text
     <Image
       image={image}
       onTransformEnd={onTransformEnd}
@@ -45,12 +47,13 @@ export const Furniture = ({
       onDragEnd={onDragEnd}
       ref={ref}
       onClick={onClick}
+      onTap={onClick}
       x={x}
       y={y}
       width={width}
       height={height}
       draggable={draggable}
-      stroke={"#C45A3C"}
+      stroke={"#234b3d"}
       strokeWidth={isSelected ? 2 : 0}
       dragBoundFunc={dragBoundFunc}
       rotation={rotation}

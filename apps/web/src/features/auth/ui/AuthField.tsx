@@ -1,43 +1,49 @@
-import { ChangeEvent } from "react";
+import { ChangeEvent, HTMLInputAutoCompleteAttribute, useId } from "react";
 
 interface AuthFieldProps {
   label: string;
-  value?: string;
+  name: string;
+  value: string;
   placeholder?: string;
-  focused?: boolean;
-  type?: "text" | "email" | "pw" | "username";
-  onClick?: () => void;
-  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
+  type?: "text" | "email" | "password";
+  autoComplete?: HTMLInputAutoCompleteAttribute;
+  minLength?: number;
+  disabled?: boolean;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const AuthField = ({
   label,
+  name,
   value,
   placeholder,
-  focused = false,
   type = "text",
-  onClick,
+  autoComplete,
+  minLength,
+  disabled,
   onChange,
 }: AuthFieldProps) => {
-  const isMono = type === "email" || type === "pw";
+  const id = useId();
   return (
-    <div onClick={onClick} className="flex flex-col gap-[5px]">
-      <label className="relative block">
-        <span className="font-body text-[11px] uppercase tracking-[0.6px] text-muted">
-          {label}
-        </span>
-        <input
-          value={value}
-          onChange={onChange}
-          type={type === "pw" ? "password" : "text"}
-          placeholder={placeholder}
-          className={`w-full rounded-[6px] border bg-white px-3 py-[10px] text-[13px] outline-none
-      ${isMono ? "font-mono" : "font-body"}
-      ${value ? "text-ink" : "text-muted"}
-      border-hair
-      focus:border-accent focus:ring-[3px] focus:ring-accent/15`}
-        />
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-[12px] font-medium text-ink">
+        {label}
       </label>
+      <input
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        type={type}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        autoCapitalize="none"
+        spellCheck={false}
+        required
+        minLength={minLength}
+        disabled={disabled}
+        className="min-h-12 w-full rounded-lg border border-hair bg-white px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted/75 focus:border-accent focus:ring-3 focus:ring-accent/10 disabled:opacity-60"
+      />
     </div>
   );
 };

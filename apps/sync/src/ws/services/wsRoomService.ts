@@ -1,27 +1,20 @@
-import { encodeStateAsUpdate } from "yjs";
 import { WsRoom } from "../model/wsRoomModel";
 import { roomRepository } from "../../repositories/roomRepository";
 import { deleteDoc } from "../model/YJSmodel";
-import { get } from "http";
+import { roomService } from "../../services/roomService";
+import { saveDirtyRoom } from "./saveRoomSnapshot";
 
 const SAVE_INTERVAL_MS = 30_000;
 const EMPTY_GRACE_MS = 10_000;
 
 export const WsRoomService = {
   async saveSnapshot(roomId: string, room: WsRoom) {
-    if (room.saving) return;
-    if (!room.dirty) return;
-    room.saving = true;
-
     try {
-      const update = encodeStateAsUpdate(room.doc);
-      const state = Buffer.from(update);
-      await roomRepository.setRoomSnapshot(roomId, state);
-      room.dirty = false;
+      await saveDirtyRoom(room, (state) =>
+        roomRepository.setRoomSnapshot(roomId, state),
+      );
     } catch (err) {
       console.error(`Failed to save snapshot for room ${roomId}`, err);
-    } finally {
-      room.saving = false;
     }
   },
 
@@ -41,7 +34,15 @@ export const WsRoomService = {
   },
 
   scheduleEviction(roomId: string, room: WsRoom) {
-    room.emptyTimer = setTimeout(() => {
+    room.emptyTimer = setTimeout(async () => {
+      room.emptyTimer = undefined;
+      if (room.conns.size > 0) return;
+      await this.saveSnapshot(roomId, room);
+      if (room.conns.size > 0) return;
+      if (room.dirty || room.saving) {
+        this.scheduleEviction(roomId, room);
+        return;
+      }
       clearInterval(room.saveInterval);
       room.saveInterval = undefined;
       deleteDoc(roomId);
@@ -49,8 +50,7 @@ export const WsRoomService = {
   },
 
   async getRole(roomId: string, userId: string) {
-    const role = await roomRepository.getRoomAccess(roomId, userId);
-    return role;
+    return roomService.getRoomRole(roomId, userId);
   },
 
   async getAccessibility(roomId: string) {

@@ -1,76 +1,60 @@
 "use client";
 
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SketchButton } from "@/components/Button";
-import { ShutDoor } from "@/components/ShutDoor";
+import { Wordmark } from "@/components/Logo";
+import { Icon } from "@/components/Icon";
 import { createRoomService } from "@/services/roomServices";
-import { useParams, useRouter } from "next/navigation";
-
-function TriedURL({ id = "apt-3QX7?", big = false }) {
-  return (
-    <div
-      className={`inline-flex items-center gap-px font-mono border border-[var(--color-hair)] rounded-md bg-[var(--color-paper)] text-[var(--color-muted)] ${
-        big ? "text-[13px] px-3 py-[9px]" : "text-[12px] px-[10px] py-[7px]"
-      }`}
-    >
-      <span>nook.app/room/</span>
-      <span
-        style={{
-          color: "var(--color-accent)",
-          textDecoration: "underline",
-          textDecorationStyle: "wavy",
-          textDecorationColor: "rgba(184,86,62,0.5)",
-          textUnderlineOffset: 3,
-        }}
-      >
-        {id}
-      </span>
-    </div>
-  );
-}
 
 export default function RoomNotFound() {
   const router = useRouter();
-
+  const pending = useRef(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState("");
   const handleStartRoom = async () => {
-    const roomId = await createRoomService();
-    router.push(`/room/${roomId}`);
+    if (pending.current) return;
+    pending.current = true;
+    setIsCreating(true);
+    try {
+      const id = await createRoomService();
+      router.push(`/rooms/${id}`);
+    } catch {
+      pending.current = false;
+      setIsCreating(false);
+      setError("We couldn't create a room. Please try again.");
+    }
   };
-
-  const handleGoToRooms = () => {
-    router.push("/");
-  };
-
-  const { roomId } = useParams();
-
   return (
-    <main className="w-screen h-screen flex justify-center items-center">
-      <div className="flex flex-col items-center gap-3">
-        <div
-          className="flex items-center justify-center rounded-[22px] border border-dashed border-[var(--color-hair)] bg-[var(--color-paper)]"
-          style={{ width: 132, height: 132 }}
-        >
-          <ShutDoor />
+    <main className="flex min-h-dvh flex-col px-6 py-7 sm:px-10">
+      <Wordmark size={24} />
+      <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
+        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl border border-hair bg-fill-2 text-accent">
+          <Icon name="lock" size={30} />
         </div>
-
-        <div className="font-display mt-3">
-          <h1 className="text-[30px] text-[var(--color-ink)] line-height-[1.55]">
-            We could not find that room.
-          </h1>
-          <h3 className="mt-3 font-body text-[14px] text-[var(--color-ink-2)]">
-            The link may be broken, or the room was deleted by its owner
-          </h3>
-        </div>
-
-        <TriedURL id={roomId?.toString()} />
-
-        <div className="mt-3 inline-flex gap-[10px]">
-          <SketchButton onClick={handleGoToRooms} primary className="px-4 py-3">
-            Go to your rooms
-          </SketchButton>
-          <SketchButton onClick={handleStartRoom} ghost className="px-4 py-3">
-            Create a new room
+        <p className="eyebrow mb-4 text-muted">A closed door, for now</p>
+        <h1 className="max-w-lg font-display text-4xl tracking-tight sm:text-5xl">
+          This room is not available.
+        </h1>
+        <p className="mb-8 mt-5 max-w-sm text-sm leading-relaxed text-muted">
+          The link may be incorrect, or you may need an invitation from the
+          owner of the room.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link href="/rooms" className="nook-button nook-button-primary">
+            <Icon name="back" size={15} />
+            Your rooms
+          </Link>
+          <SketchButton onClick={handleStartRoom} disabled={isCreating}>
+            {isCreating ? "Creating room…" : "Create a new room"}
           </SketchButton>
         </div>
+        {error && (
+          <p role="alert" className="mt-5 text-xs text-red-700">
+            {error}
+          </p>
+        )}
       </div>
     </main>
   );

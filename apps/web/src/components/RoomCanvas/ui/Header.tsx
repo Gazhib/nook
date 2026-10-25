@@ -2,13 +2,19 @@
 
 import { SketchButton } from "@/components/Button";
 import { Wordmark } from "@/components/Logo";
+import { Icon } from "@/components/Icon";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { client } from "@/services/client";
-import { getRoomNameService } from "@/services/roomServices";
+import { getRoomNameService, renameRoomService } from "@/services/roomServices";
 import { Role } from "@nook/shared";
 import { useConnectionStore } from "@/stores/useConnectionStore";
 import toast from "react-hot-toast";
+
+const connectionMeta: Record<string, { label: string; color: string }> = {
+  connected: { label: "Connected", color: "#648565" },
+  connecting: { label: "Connecting", color: "#ad8a4b" },
+  disconnected: { label: "Offline", color: "#b15a49" },
+};
 
 export const Header = ({
   onShare,
@@ -20,109 +26,102 @@ export const Header = ({
   role: Role | null;
 }) => {
   const router = useRouter();
-
   const [roomName, setRoomName] = useState("");
-
-  const bouncingRef = useRef<NodeJS.Timeout | null>(null);
-
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const savedName = useRef("");
   const connection = useConnectionStore((state) => state.connection);
-
-  const connectionMeta: Record<string, { label: string; color: string }> = {
-    connected: { label: "Connected", color: "#7A8F6B" },
-    connecting: { label: "Connecting", color: "#C4A97D" },
-    disconnected: { label: "Offline", color: "#B8563E" },
-  };
   const status = connectionMeta[connection] ?? connectionMeta.connecting;
-
   useEffect(() => {
-    const fetchRoomName = async () => {
-      const res = await getRoomNameService(roomId);
-      setRoomName(res);
-    };
-    fetchRoomName();
-  }, [roomId]);
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (bouncingRef.current) clearTimeout(bouncingRef.current);
-
-    setRoomName(e.target.value);
-  };
-
-  const handleNameSubmit = async () => {
-    if (bouncingRef.current) clearTimeout(bouncingRef.current);
-
-    bouncingRef.current = setTimeout(async () => {
-      bouncingRef.current = null;
-      await client.post(`/rooms/${roomId}/rename`, {
-        newName: roomName,
+    let active = true;
+    getRoomNameService(roomId)
+      .then((name) => {
+        if (!active) return;
+        setRoomName(name);
+        savedName.current = name;
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (active) toast.error("Couldn't load the room name.");
       });
-    }, 2000);
-  };
-
-  const onFocus = () => {
-    if (bouncingRef.current) {
-      clearTimeout(bouncingRef.current);
-      bouncingRef.current = null;
+    return () => {
+      active = false;
+    };
+  }, [roomId]);
+  const handleNameSubmit = async () => {
+    const name = roomName.trim();
+    if (isSaving || name === savedName.current) return;
+    if (!name) {
+      setRoomName(savedName.current);
+      return;
+    }
+    setRoomName(name);
+    setIsSaving(true);
+    try {
+      await renameRoomService(roomId, name);
+      savedName.current = name;
+    } catch {
+      setRoomName(savedName.current);
+      toast.error("Couldn't rename the room. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
-
   return (
-    <header className="flex h-12 shrink-0 items-center gap-4 border-b border-hair bg-white px-4 max-w-screen">
-      <Wordmark onClick={() => router.push("/")} size={18} />
-      <div className="h-5 w-px bg-hair" />
-      <div className="flex items-center gap-1.5 font-display text-sm font-medium text-ink">
-        {role !== "owner" ? (
-          <span className="bg-transparent focus:outline-none">{roomName}</span>
-        ) : (
-          <input
-            className="bg-transparent focus:outline-none"
-            onFocus={onFocus}
-            onBlur={handleNameSubmit}
-            value={roomName}
-            onChange={handleNameChange}
-          />
-        )}
-
-        <span className="rounded-[3px] border border-hair px-[5px] py-0.5 font-mono text-[10px] text-muted">
-          room/{roomId}
-        </span>
+    <header className="z-20 flex h-[72px] shrink-0 items-center gap-3 border-b border-hair bg-[#fcfcf8] px-4 sm:gap-5 sm:px-6">
+      <Wordmark onClick={() => router.push("/rooms")} size={21} />
+      <div className="h-7 w-px shrink-0 bg-hair" />
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-2">
+          {role === "owner" ? (
+            <input
+              aria-label="Room name"
+              maxLength={255}
+              disabled={isLoading || isSaving}
+              className="w-full max-w-[300px] rounded border border-transparent bg-transparent py-1 text-[13px] font-medium hover:border-hair focus:border-hair focus:bg-white focus:outline-none sm:text-sm"
+              value={roomName}
+              onChange={(e) => setRoomName(e.target.value)}
+              onBlur={() => void handleNameSubmit()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") {
+                  setRoomName(savedName.current);
+                }
+              }}
+              placeholder="Loading room…"
+            />
+          ) : (
+            <h1 className="truncate text-[13px] font-medium sm:text-sm">
+              {roomName || "Loading room…"}
+            </h1>
+          )}
+        </div>
+        <p className="mt-0.5 hidden font-mono text-[9px] uppercase tracking-[.1em] text-muted sm:block">
+          {isSaving
+            ? "Saving name…"
+            : role === "viewer"
+              ? "View only"
+              : "Your planning studio"}
+        </p>
       </div>
-      <div className="flex-1" />
-      <div
-        className="mr-2 flex items-center gap-1.5 rounded-full border border-hair px-2.5 py-1 font-display text-xs font-medium text-muted"
-        title={status.label}
-        aria-live="polite"
+      <span
+        role="status"
+        className="hidden shrink-0 items-center gap-1.5 text-[10px] text-muted sm:flex"
       >
         <span
-          className={`h-2 w-2 rounded-full ${
-            connection === "connecting" ? "animate-pulse" : ""
-          }`}
-          style={{ backgroundColor: status.color }}
-          aria-hidden="true"
+          className={`h-1.5 w-1.5 rounded-full ${connection === "connecting" ? "animate-pulse" : ""}`}
+          style={{ background: status.color }}
         />
         {status.label}
-      </div>
-      <SketchButton onClick={onShare} primary className="cursor-pointer">
-        <svg
-          width={13}
-          height={13}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.75}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M8.6 13.5 L15.4 17.5 M15.4 6.5 L8.6 10.5" />
-          <circle cx="6" cy="12" r="2.6" fill="currentColor" stroke="none" />
-          <circle cx="18" cy="5.5" r="2.6" fill="currentColor" stroke="none" />
-          <circle cx="18" cy="18.5" r="2.6" fill="currentColor" stroke="none" />
-        </svg>
-
-        <span className="ml-1.5">Share</span>
+      </span>
+      <SketchButton
+        onClick={onShare}
+        primary
+        className="!min-h-9 !px-3 !py-2 !text-xs"
+      >
+        <Icon name="share" size={14} />
+        <span>Share</span>
       </SketchButton>
-      {/* <SketchAvatar size={26} label="Y" /> */}
     </header>
   );
 };

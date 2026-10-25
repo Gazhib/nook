@@ -1,13 +1,15 @@
 "use client";
 
 import { Modal } from "antd";
+import { Icon } from "../../Icon";
 
-const shortcuts: { keys: string; label: string }[] = [
+const shortcuts = [
   { keys: "Space + drag", label: "Pan the canvas" },
-  { keys: "Scroll", label: "Zoom in / out" },
-  { keys: "Arrows", label: "Nudge selected item" },
-  { keys: "Delete", label: "Remove selected item" },
-  { keys: "Ctrl + Z / Y", label: "Undo / redo" },
+  { keys: "Scroll", label: "Zoom in or out" },
+  { keys: "Arrow keys", label: "Move selected piece" },
+  { keys: "Delete", label: "Remove selected piece" },
+  { keys: "Ctrl / ⌘ + Z", label: "Undo" },
+  { keys: "Ctrl + Y / ⌘ + Shift + Z", label: "Redo" },
 ];
 
 export const HelpModal = ({
@@ -16,57 +18,51 @@ export const HelpModal = ({
 }: {
   open: boolean;
   onClose: () => void;
-}) => {
-  return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      closable={false}
-      footer={null}
-      centered
-      width={440}
-      styles={{
-        mask: { background: "rgba(29, 26, 22, 0.35)" },
-      }}
-    >
-      <div className="w-[440px] overflow-hidden rounded-lg bg-white font-body shadow-[0_4px_20px_rgba(0,0,0,0.10),0_1px_2px_rgba(0,0,0,0.04)]">
-        <div className="border-b border-hair px-6 py-5">
-          <div className="font-display text-base font-medium text-ink">
-            Help
-          </div>
-          <div className="mt-1 font-body text-[13px] text-muted">
-            Keyboard shortcuts for the room canvas.
-          </div>
+}) => (
+  <Modal
+    open={open}
+    onCancel={onClose}
+    closable={false}
+    footer={null}
+    centered
+    width={480}
+    className="nook-modal"
+    styles={{ mask: { background: "rgba(28,43,32,.35)" } }}
+  >
+    <div className="font-body text-ink">
+      <div className="flex items-start justify-between border-b border-hair px-6 py-6">
+        <div>
+          <p className="eyebrow mb-2 text-muted">A few handy moves</p>
+          <h2 className="font-display text-[28px] tracking-tight">
+            Make yourself at home.
+          </h2>
         </div>
-
-        <div className="border-b border-hair p-6">
-          <div className="flex flex-col gap-2.5">
-            {shortcuts.map((s) => (
-              <div
-                key={s.keys}
-                className="flex items-center justify-between gap-4"
-              >
-                <span className="font-body text-[13px] text-ink-2">
-                  {s.label}
-                </span>
-                <kbd className="rounded-[5px] border border-hair bg-paper px-2 py-1 font-mono text-[11px] text-ink">
-                  {s.keys}
-                </kbd>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="px-6 py-4 font-body text-[12px] text-muted">
-          Built by one person, not a company. Questions?{" "}
-          <a
-            href="mailto:hello@nook.app"
-            className="text-ink underline decoration-hair underline-offset-2 hover:decoration-ink"
-          >
-            hello@nook.app
-          </a>
-        </div>
+        <button
+          type="button"
+          aria-label="Close help"
+          onClick={onClose}
+          className="rounded-lg p-2 text-muted hover:bg-fill"
+        >
+          <Icon name="close" size={18} />
+        </button>
       </div>
-    </Modal>
-  );
-};
+      <div className="px-6 py-3">
+        {shortcuts.map((s) => (
+          <div
+            key={s.label}
+            className="flex flex-wrap items-center justify-between gap-3 border-b border-hair-2 py-4 last:border-0"
+          >
+            <span className="text-xs text-ink-2">{s.label}</span>
+            <kbd className="rounded-md border border-hair bg-paper px-2 py-1.5 font-mono text-[10px] text-muted">
+              {s.keys}
+            </kbd>
+          </div>
+        ))}
+      </div>
+      <p className="border-t border-hair bg-paper px-6 py-4 text-[11px] leading-relaxed text-muted">
+        Click a piece in the library to place it. Select it on the canvas to
+        move, resize, or rotate it.
+      </p>
+    </div>
+  </Modal>
+);

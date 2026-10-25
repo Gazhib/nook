@@ -1,44 +1,54 @@
+import Link from "next/link";
+import { Icon } from "../../Icon";
+
 export const RoomCard = ({
   name,
   id,
   when,
-  compact = false,
-  onClick,
+  index = 0,
 }: {
-  onClick?: () => void;
   name: string;
   id: string;
   when?: string;
-  compact?: boolean;
-}) => {
-  return (
+  index?: number;
+}) => (
+  <Link
+    href={`/rooms/${id}`}
+    className="room-card group flex min-w-0 flex-col overflow-hidden rounded-xl border border-hair bg-white transition-shadow hover:border-[#9dae99] hover:shadow-[0_6px_24px_#24332c0a]"
+  >
     <div
-      onClick={onClick}
-      className="flex flex-col overflow-hidden rounded-lg 
-    border border-hair bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]
-    cursor-pointer
-    "
+      className="plan-surface relative flex h-[190px] items-center justify-center border-b border-hair-2"
+      aria-hidden="true"
     >
-      <div
-        className={`border-b border-hair-2 bg-paper ${
-          compact ? "h-[100px]" : "h-[150px]"
-        }`}
-      ></div>
-      <div
-        className={`flex flex-col gap-1.5 ${
-          compact ? "px-3 py-2.5" : "px-4 py-3.5"
-        }`}
+      <svg
+        viewBox="0 0 220 150"
+        className="h-[132px] w-[194px] text-[#7b8c71]"
+        fill="none"
+        stroke="currentColor"
       >
-        <div className="flex items-center justify-between">
-          <div className="font-display text-[14px] font-medium tracking-[-0.1px] text-ink">
-            {name}
-          </div>
-          {/* <Icon name="dots" size={16} color={WF.muted} /> */}
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="font-body text-[11px] text-muted">{when}</div>
-        </div>
-      </div>
+        <path d="M30 25h160v100h-60m-35 0H30V25Z" strokeWidth="2" />
+        <path d="M130 125V90a35 35 0 0 0-35 35M135 25v40h55" strokeWidth="1" />
+        <path d="M55 23h43v4H55zM188 80h4v25h-4z" fill="#f5f3ed" />
+        <path
+          d="M30 12h160M18 25v100M30 8v8m160-8v8M14 25h8m-8 100h8"
+          strokeWidth=".6"
+          opacity=".65"
+        />
+      </svg>
+      <span className="absolute left-4 top-4 rounded border border-hair bg-white/80 px-2 py-1 font-mono text-[9px] text-muted">
+        PLAN {String(index + 1).padStart(2, "0")}
+      </span>
+      <span className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-accent shadow-sm">
+        <Icon name="arrow" size={15} className="room-card-arrow" />
+      </span>
     </div>
-  );
-};
+    <div className="p-5">
+      <h2 className="truncate text-[15px] font-medium tracking-tight">
+        {name}
+      </h2>
+      <p className="mt-2 text-[11px] text-muted">
+        {when ? `Created ${when}` : "Your room, ready to arrange"}
+      </p>
+    </div>
+  </Link>
+);

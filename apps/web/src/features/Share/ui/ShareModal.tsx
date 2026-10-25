@@ -1,15 +1,12 @@
 "use client";
 
+import { Modal } from "antd";
 import { SketchButton } from "@/components/Button";
-import { Modal, Select } from "antd";
+import { Icon } from "@/components/Icon";
 import { useShare } from "../model/useShare";
 import { Role } from "@nook/shared";
 
-const selectRoleOptions = [
-  { label: "editor", value: "editor" },
-  { label: "owner", value: "owner" },
-  { label: "viewer", value: "viewer" },
-];
+const roles: Role[] = ["editor", "viewer", "owner"];
 
 export const ShareModal = ({
   open,
@@ -19,7 +16,31 @@ export const ShareModal = ({
   open: boolean;
   onClose: () => void;
   currentUserRole: Role | null;
-}) => {
+}) => (
+  <Modal
+    open={open}
+    onCancel={onClose}
+    closable={false}
+    footer={null}
+    centered
+    width={480}
+    className="nook-modal"
+    styles={{ mask: { background: "rgba(28,43,32,.35)" } }}
+    destroyOnHidden
+  >
+    {open && (
+      <ShareContent onClose={onClose} currentUserRole={currentUserRole} />
+    )}
+  </Modal>
+);
+
+function ShareContent({
+  onClose,
+  currentUserRole,
+}: {
+  onClose: () => void;
+  currentUserRole: Role | null;
+}) {
   const {
     visibility,
     handleChangeVisibility,
@@ -27,158 +48,215 @@ export const ShareModal = ({
     link,
     handleCopy,
     username,
-    handleUsername,
+    setUsername,
     role,
     setRole,
     members,
     handleInvite,
     handleChangeRole,
     handleRemove,
-  } = useShare();
-
+    canManage,
+    pending,
+    isLoading,
+    error,
+  } = useShare(true, currentUserRole);
   return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      closable={false}
-      footer={null}
-      centered
-      width={460}
-      styles={{
-        mask: { background: "rgba(29, 26, 22, 0.35)" },
-      }}
-    >
-      <div className="w-[460px] overflow-hidden rounded-lg bg-white font-body shadow-[0_4px_20px_rgba(0,0,0,0.10),0_1px_2px_rgba(0,0,0,0.04)]">
-        <div className="border-b border-hair px-6 py-5">
-          <div className="font-display text-base font-medium text-ink">
-            Invite to Studio apartment
-          </div>
+    <div className="font-body text-ink">
+      <div className="flex items-start justify-between border-b border-hair px-6 py-6">
+        <div>
+          <p className="eyebrow mb-2 text-muted">Better together</p>
+          <h2 className="font-display text-[30px] tracking-tight">
+            Share your space.
+          </h2>
+          <p className="mt-2 text-xs text-muted">
+            A second pair of eyes. A few more possibilities.
+          </p>
         </div>
-
-        <div className="border-b border-hair p-6">
-          {/* visibility toggle */}
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div
-              role="radiogroup"
-              aria-label="Room visibility"
-              className="inline-flex shrink-0 rounded-md border border-hair p-0.5"
-            >
-              {(["private", "public"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  role="radio"
-                  aria-checked={visibility === v}
-                  onClick={handleChangeVisibility}
-                  className={`cursor-pointer rounded-[5px] px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                    visibility === v
-                      ? "bg-ink text-white"
-                      : "text-muted hover:text-ink"
-                  }`}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close sharing settings"
+          className="rounded-lg p-2 text-muted hover:bg-fill"
+        >
+          <Icon name="close" size={18} />
+        </button>
+      </div>
+      {isLoading ? (
+        <p role="status" className="p-6 text-sm text-muted">
+          Loading sharing settings…
+        </p>
+      ) : error ? (
+        <p role="alert" className="p-6 text-sm text-red-700">
+          {error}
+        </p>
+      ) : (
+        <>
+          <div className="border-b border-hair px-6 py-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs font-medium">Room access</span>
+              {canManage ? (
+                <div
+                  role="group"
+                  aria-label="Room visibility"
+                  className="inline-flex rounded-lg border border-hair bg-paper p-1"
                 >
-                  {v}
-                </button>
-              ))}
+                  {(["private", "public"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      disabled={pending}
+                      aria-pressed={visibility === v}
+                      onClick={() => void handleChangeVisibility(v)}
+                      className={`rounded-md px-3 py-1.5 text-[11px] capitalize disabled:opacity-50 ${visibility === v ? "bg-white text-accent shadow-sm" : "text-muted hover:text-ink"}`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="rounded-md bg-fill px-3 py-1.5 text-[11px] capitalize text-muted">
+                  {visibility}
+                </span>
+              )}
             </div>
-          </div>
-
-          {isPublic ? (
-            <>
-              {" "}
-              <div className="flex gap-2">
-                <div className="flex-1 rounded-md border border-hair bg-paper px-2.5 py-2 font-mono text-xs text-ink-2 truncate">
-                  {link}
-                </div>
-                <div className="flex items-center gap-1.5 rounded-md border border-hair px-2.5 py-2 text-xs">
-                  Can edit ▾
-                </div>
-              </div>
-              <div className="mt-3 flex justify-end">
+            <p className="text-xs leading-relaxed text-muted">
+              {isPublic
+                ? "Anyone signed in with the link can open and edit this room."
+                : "Only invited members can open this room."}
+            </p>
+            {isPublic && (
+              <div className="mt-4 flex gap-2">
+                <label className="min-w-0 flex-1">
+                  <span className="sr-only">Room link</span>
+                  <input
+                    readOnly
+                    value={link}
+                    onFocus={(e) => e.target.select()}
+                    className="nook-input !bg-paper !text-[11px]"
+                  />
+                </label>
                 <SketchButton
-                  onClick={handleCopy}
-                  primary
-                  className="px-3.5 py-2 text-xs"
+                  onClick={() => void handleCopy()}
+                  className="!px-3 !text-xs"
                 >
                   Copy link
                 </SketchButton>
-              </div>{" "}
-            </>
-          ) : (
-            <>
-              <div className="flex gap-2">
-                <input
-                  placeholder="add by username"
-                  value={username}
-                  onChange={handleUsername}
-                  className="flex-1 rounded-md border border-hair bg-paper px-2.5 py-2 font-mono text-xs text-ink-2 truncate"
-                />
-                <Select
-                  options={selectRoleOptions}
-                  onChange={(value) => setRole(value)}
-                  value={role}
-                  className="flex items-center gap-1.5 
-              rounded-md border border-hair px-2.5 py-2 text-xs"
-                />
               </div>
-              <div className="mt-3 flex justify-end">
-                <SketchButton
-                  onClick={handleInvite}
-                  primary
-                  className="px-3.5 py-2 text-xs"
+            )}
+            {canManage && (
+              <form
+                className="mt-5 border-t border-hair-2 pt-5"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleInvite();
+                }}
+              >
+                <label
+                  htmlFor="invite-username"
+                  className="mb-2 block text-xs font-medium"
                 >
-                  Add to Room
-                </SketchButton>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="px-6 py-4">
-          <div className="mb-2.5 text-[11px] uppercase tracking-[0.6px] text-muted">
-            Members · {members.length}
-          </div>
-          {members.map((m, i) => (
-            <div
-              key={m.username}
-              className={`flex items-center gap-2.5 py-2 ${
-                i === 0 ? "" : "border-t border-hair-2"
-              }`}
-            >
-              {/* <SketchAvatar size={28} label={m.n[0]} color={m.c} /> */}
-              <div className="flex-1 text-[13px] text-ink">{m.username}</div>
-              {/* gotta change the owner to the own editor type shit */}
-              {m.role !== "owner" ? (
-                <>
-                  <Select
-                    options={selectRoleOptions}
-                    value={m.role}
-                    className="text-xs text-ink-2"
-                    onChange={(value) => handleChangeRole(m.userId, value)}
+                  Invite by username
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    id="invite-username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    maxLength={24}
+                    placeholder="Their username"
+                    className="nook-input !w-auto min-w-0 flex-1"
+                    disabled={pending}
                   />
-                  <button
-                    type="button"
-                    aria-label={`Remove ${m.username}`}
-                    onClick={() => handleRemove(m.userId)}
-                    className="cursor-pointer rounded-md border border-hair px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  <select
+                    aria-label="Invitation role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as Role)}
+                    disabled={pending}
+                    className="nook-select !px-2"
                   >
-                    Remove
-                  </button>
-                </>
-              ) : (
-                <div className="text-xs text-ink-2">{m.role}</div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="border-t border-hair bg-paper px-6 py-3.5">
-          <div className="text-[11px] text-muted">
-            {isPublic
-              ? "Anyone with the link can join as Editor."
-              : "Sharing is off — invite members by username to grant access."}
+                    {roles.map((r) => (
+                      <option value={r} key={r}>
+                        {r[0].toUpperCase() + r.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <SketchButton
+                    type="submit"
+                    primary
+                    disabled={pending || !username.trim()}
+                    className="!px-3 !text-xs"
+                  >
+                    Invite
+                  </SketchButton>
+                </div>
+              </form>
+            )}
           </div>
-        </div>
-      </div>
-    </Modal>
+          <div className="max-h-[240px] overflow-y-auto px-6 py-5">
+            <p className="eyebrow mb-3 text-muted">
+              People with access · {members.length}
+            </p>
+            {members.map((member) => (
+              <div
+                key={member.userId}
+                className="flex items-center gap-2.5 border-b border-hair-2 py-3 last:border-0"
+              >
+                <span
+                  aria-hidden="true"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fill-2 font-display text-sm text-accent"
+                >
+                  {member.username.charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs">
+                  {member.username}
+                </span>
+                {canManage && member.role !== "owner" ? (
+                  <>
+                    <select
+                      aria-label={`Role for ${member.username}`}
+                      value={member.role}
+                      onChange={(e) =>
+                        void handleChangeRole(
+                          member.userId,
+                          e.target.value as Role,
+                        )
+                      }
+                      disabled={pending}
+                      className="nook-select !px-1 !py-2 !text-[10px]"
+                    >
+                      {roles.map((r) => (
+                        <option value={r} key={r}>
+                          {r[0].toUpperCase() + r.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => void handleRemove(member.userId)}
+                      aria-label={`Remove ${member.username}`}
+                      className="rounded p-2 text-muted hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                    >
+                      <Icon name="close" size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-[10px] capitalize text-muted">
+                    {member.role}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 border-t border-hair bg-paper px-6 py-4 text-[10px] text-muted">
+            <Icon name="lock" size={13} />
+            {canManage
+              ? "You're in control of who can access this room."
+              : "The room's owner manages invitations and access."}
+          </div>
+        </>
+      )}
+    </div>
   );
-};
+}

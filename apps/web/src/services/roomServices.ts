@@ -1,5 +1,5 @@
 import { Room } from "@nook/shared";
-import { ApiError, client } from "./client";
+import { client } from "./client";
 
 interface CreateRoomProps {
   roomId: string;
@@ -23,7 +23,7 @@ type RoomSnapshot = {
 
 interface GetRoomProps {
   message: string;
-  room: Room;
+  room: Room & { typeOfAccessibility: "private" | "public" };
   roomSnapshot: RoomSnapshot;
 }
 // Dont forget to handle errors
@@ -59,10 +59,10 @@ interface GetRoomMembersProps {
 }
 
 export const getRoomMembersService = async (
-  roomId: string
+  roomId: string,
 ): Promise<RoomMember[]> => {
   const res = await client.get<GetRoomMembersProps>(
-    `/rooms/${roomId}/room_members`
+    `/rooms/${roomId}/room_members`,
   );
   return res.members;
 };
@@ -70,25 +70,20 @@ export const getRoomMembersService = async (
 export const inviteUserToRoomService = async (
   roomId: string,
   username: string,
-  role: string
+  role: string,
 ) => {
   const res = await client.post<{ message: string; user: { id: string } }>(
-    `/rooms/${roomId}/${username}/invite`,
+    `/rooms/${roomId}/${encodeURIComponent(username)}/invite`,
     {
       role,
-    }
+    },
   );
 
-  if (res instanceof ApiError) {
-    throw res;
-  } else {
-    console.log(res);
-    return res;
-  }
+  return res;
 };
 export const changeRoomAccessibilityService = async (
   roomId: string,
-  accessibility: "private" | "public"
+  accessibility: "private" | "public",
 ) => {
   await client.post(`/rooms/${roomId}/accessibility`, {
     accessibility,
@@ -97,13 +92,15 @@ export const changeRoomAccessibilityService = async (
 
 export const getRoomAccessService = async (roomId: string) => {
   const res = await client.get<{ role: RoomRole; message: string }>(
-    `/rooms/${roomId}/access`
+    `/rooms/${roomId}/access`,
   );
   return res.role;
 };
 
-export const getRoomsForUserService = async () => {
-  const res = await client.get<{ rooms: Room[]; message: string }>(`/rooms`);
+export const getRoomsForUserService = async (signal?: AbortSignal) => {
+  const res = await client.get<{ rooms: Room[]; message: string }>(`/rooms`, {
+    signal,
+  });
   return res.rooms;
 };
 
@@ -115,7 +112,7 @@ export const renameRoomService = async (roomId: string, newName: string) => {
 
 export const getRoomNameService = async (roomId: string) => {
   const res = await client.get<{ name: string; message: string }>(
-    `/rooms/${roomId}/name`
+    `/rooms/${roomId}/name`,
   );
   return res.name;
 };
@@ -123,7 +120,7 @@ export const getRoomNameService = async (roomId: string) => {
 export const changeUserRoleService = async (
   roomId: string,
   userId: string,
-  role: string
+  role: string,
 ) => {
   const res = await client.post(`/rooms/${roomId}/${userId}/role`, {
     role,

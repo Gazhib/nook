@@ -8,6 +8,9 @@
 export const isEditableTarget = (target: EventTarget | null): boolean => {
   if (!(target instanceof HTMLElement)) return false;
 
-  const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
+  return (
+    target.isContentEditable ||
+    target.closest("input, textarea, select, button, a, [role='dialog']") !==
+      null
+  );
 };

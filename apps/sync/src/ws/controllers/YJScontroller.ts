@@ -8,8 +8,9 @@ export const YJScontroller = {
     message: RawData,
     doc: Doc,
     ws: WebSocket,
-    awareness: awarenessProtocol.Awareness
+    awareness: awarenessProtocol.Awareness,
+    canWrite: boolean,
   ) {
-    YJSservice.handleMessage(message, doc, ws, awareness);
+    YJSservice.handleMessage(message, doc, ws, awareness, canWrite);
   },
 };

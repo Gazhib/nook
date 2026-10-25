@@ -3,131 +3,118 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import { isEditableTarget } from "./isEditableTarget";
 
 export const useViewPort = (stageRef: RefObject<Stage | null>) => {
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (!stageRef.current) return;
-      e.preventDefault();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 800, height: 600 });
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
 
-      const stage = stageRef.current;
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const container = stage.container();
+    let isSpaceHeld = false;
+    let lastMousePos: { x: number; y: number } | null = null;
+    const resetPan = () => {
+      isSpaceHeld = false;
+      lastMousePos = null;
+      setIsPanning(false);
+    };
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      stage.setPointersPositions(e);
       const pointer = stage.getPointerPosition();
       if (!pointer) return;
-
       const oldScale = stage.scaleX();
-      const newScale = e.deltaY < 0 ? oldScale * 1.1 : oldScale / 1.1;
-
-      if (newScale < 0.5 || newScale > 3) return;
-
+      const newScale = Math.min(
+        3,
+        Math.max(0.5, e.deltaY < 0 ? oldScale * 1.1 : oldScale / 1.1),
+      );
       const canvasPoint = {
         x: (pointer.x - stage.x()) / oldScale,
         y: (pointer.y - stage.y()) / oldScale,
       };
-
       stage.scale({ x: newScale, y: newScale });
       stage.position({
         x: pointer.x - canvasPoint.x * newScale,
         y: pointer.y - canvasPoint.y * newScale,
       });
+      setScale(newScale);
+      setPosition(stage.position());
       stage.batchDraw();
     };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => window.removeEventListener("wheel", handleWheel);
-  }, []);
-
-  const [isPanning, setIsPanning] = useState(false);
-  const isSpaceHeld = useRef(false);
-  const lastMousePos = useRef<{ x: number; y: number } | null>(null);
-
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't hijack Space while the user is typing (e.g. the room-name input).
       if (isEditableTarget(e.target)) return;
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest("button, a, select, [role='button']")
+      )
+        return;
       if (e.code === "Space" && !e.repeat) {
         e.preventDefault();
-        isSpaceHeld.current = true;
+        isSpaceHeld = true;
         setIsPanning(true);
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        isSpaceHeld.current = false;
-        lastMousePos.current = null;
-        setIsPanning(false);
-      }
+      if (e.code === "Space") resetPan();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
-      if (isSpaceHeld.current) {
-        lastMousePos.current = { x: e.clientX, y: e.clientY };
+      if (isSpaceHeld && e.button === 0) {
+        lastMousePos = { x: e.clientX, y: e.clientY };
       }
     };
-
     const handleMouseMove = (e: MouseEvent) => {
-      if (
-        !isSpaceHeld.current ||
-        e.buttons !== 1 ||
-        !lastMousePos.current ||
-        !stageRef.current
-      )
-        return;
-
-      const dx = e.clientX - lastMousePos.current.x;
-      const dy = e.clientY - lastMousePos.current.y;
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-
-      const stage = stageRef.current;
+      if (!isSpaceHeld || e.buttons !== 1 || !lastMousePos) return;
+      const dx = e.clientX - lastMousePos.x;
+      const dy = e.clientY - lastMousePos.y;
+      lastMousePos = { x: e.clientX, y: e.clientY };
       stage.position({ x: stage.x() + dx, y: stage.y() + dy });
+      setPosition(stage.position());
       stage.batchDraw();
     };
-
     const handleMouseUp = () => {
-      lastMousePos.current = null;
+      lastMousePos = null;
     };
-
-    window.addEventListener("mousedown", handleMouseDown);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("blur", resetPan);
     return () => {
-      window.removeEventListener("mousedown", handleMouseDown);
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("blur", resetPan);
     };
-  }, []);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 800, height: 600 });
+  }, [stageRef]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const handleResize = () => {
-      setSize({
-        width: container.offsetWidth,
-        height: container.offsetHeight,
-      });
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      setSize((current) =>
+        current.width === width && current.height === height
+          ? current
+          : { width, height },
+      );
     };
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(container);
     handleResize();
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [containerRef]);
+    return () => observer.disconnect();
+  }, []);
 
   const getViewportCenter = (stage: Stage) => {
     const transform = stage.getAbsoluteTransform().copy().invert();
-    return transform.point({
-      x: stage.width() / 2,
-      y: stage.height() / 2,
-    });
+    return transform.point({ x: stage.width() / 2, y: stage.height() / 2 });
   };
-
-  return { isPanning, containerRef, size, getViewportCenter };
+  return { isPanning, containerRef, size, scale, position, getViewportCenter };
 };

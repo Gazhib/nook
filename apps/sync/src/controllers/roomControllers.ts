@@ -6,7 +6,7 @@ const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function readJsonBody(
-  c: Context
+  c: Context,
 ): Promise<Record<string, unknown>> {
   const body = await c.req.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -16,7 +16,7 @@ export async function readJsonBody(
 }
 
 export function assertRoomId(
-  roomId: string | undefined
+  roomId: string | undefined,
 ): asserts roomId is string {
   if (!roomId || roomId.trim() === "") {
     throw new BadRequestError("Invalid roomId");
@@ -52,7 +52,7 @@ export const roomControllers = {
 
     return c.json(
       { message: "Room found successfully", room, roomSnapshot },
-      200
+      200,
     );
   },
 
@@ -70,7 +70,11 @@ export const roomControllers = {
 
     assertRoomId(roomId);
 
-    await roomService.setRoomSnapshot(roomId, Buffer.from(state, "base64"));
+    await roomService.setRoomSnapshot(
+      roomId,
+      Buffer.from(state, "base64"),
+      c.get("userId"),
+    );
 
     return c.json({ message: "Room snapshot saved successfully" }, 200);
   },
@@ -98,11 +102,15 @@ export const roomControllers = {
 
     if (accessibility !== "private" && accessibility !== "public") {
       throw new BadRequestError(
-        'Field "accessibility" must be either "private" or "public"'
+        'Field "accessibility" must be either "private" or "public"',
       );
     }
 
-    await roomService.setRoomAccessibility(roomId, accessibility);
+    await roomService.setRoomAccessibility(
+      roomId,
+      accessibility,
+      c.get("userId"),
+    );
     return c.json({ message: "Room accessibility has changed" }, 200);
   },
 
@@ -111,7 +119,7 @@ export const roomControllers = {
 
     assertRoomId(roomId);
 
-    const members = await roomService.getRoomMembers(roomId);
+    const members = await roomService.getRoomMembers(roomId, c.get("userId"));
     return c.json({ members, message: "Room members found" }, 200);
   },
 
@@ -135,7 +143,7 @@ export const roomControllers = {
       roomId,
       username,
       role,
-      inviterId
+      inviterId,
     );
 
     return c.json({ message: "User invited successfully", user }, 200);
@@ -172,7 +180,7 @@ export const roomControllers = {
 
     assertRoomId(roomId);
 
-    const name = await roomService.getRoomName(roomId);
+    const name = await roomService.getRoomName(roomId, c.get("userId"));
 
     return c.json({ name, message: "Room name found successfully" }, 200);
   },

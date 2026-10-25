@@ -15,9 +15,7 @@ export const FurnitureTag = ({
   width,
   height,
   color,
-  onDragStart,
   onClick,
-  toggleWebsocket,
 }: FurnitureProps) => {
   return (
     <div

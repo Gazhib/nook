@@ -75,8 +75,8 @@ export const roomRepository = {
       .where(
         and(
           eq(room_snapshots.roomId, roomId),
-          notInArray(room_snapshots.id, keepIds)
-        )
+          notInArray(room_snapshots.id, keepIds),
+        ),
       );
   },
 
@@ -91,7 +91,7 @@ export const roomRepository = {
     const member = await db.query.roomMembers.findFirst({
       where: and(
         eq(roomMembers.roomId, roomId),
-        eq(roomMembers.userId, userId)
+        eq(roomMembers.userId, userId),
       ),
       columns: { role: true },
     });
@@ -171,10 +171,12 @@ export const roomRepository = {
         ownerId: rooms.ownerId,
         typeOfAccessibility: rooms.typeOfAccessibility,
         name: rooms.name,
+        createdAt: rooms.createdAt,
       })
       .from(rooms)
       .innerJoin(roomMembers, eq(rooms.id, roomMembers.roomId))
-      .where(eq(roomMembers.userId, userId));
+      .where(eq(roomMembers.userId, userId))
+      .orderBy(desc(rooms.createdAt), desc(rooms.id));
 
     return roomsForUser;
   },
@@ -200,7 +202,7 @@ export const roomRepository = {
       .update(roomMembers)
       .set({ role: role })
       .where(
-        and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId))
+        and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId)),
       );
   },
 
@@ -208,7 +210,7 @@ export const roomRepository = {
     await db
       .delete(roomMembers)
       .where(
-        and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId))
+        and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, userId)),
       );
   },
 };

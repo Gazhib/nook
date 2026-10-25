@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const Wordmark = ({
   onClick,
   size = 28,
@@ -9,52 +11,45 @@ export const Wordmark = ({
   color?: string;
   accent?: string;
 }) => {
-  return (
-    <div
-      onClick={onClick}
-      className="font-display inline-flex items-center cursor-pointer select-none"
-      style={{ gap: size * 0.25 }}
-    >
+  const mark = (
+    <>
       <svg
-        width={size * 1.6}
-        height={size}
-        viewBox="0 0 160 100"
-        className="block"
+        width={size * 1.15}
+        height={size * 1.15}
+        viewBox="0 0 32 32"
+        fill="none"
+        aria-hidden="true"
       >
         <path
-          d={`M8 82 L8 32 M8 48 Q8 32 22 32 Q36 32 36 48 L36 82`}
-          fill="none"
-          stroke={color}
-          strokeWidth="9"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle
-          cx={64}
-          cy={58}
-          r={22}
-          fill="none"
-          stroke={color}
-          strokeWidth="9"
-        />
-        <circle
-          cx={112}
-          cy={58}
-          r={22}
-          fill="none"
+          d="M5 27V7h14v8h8v12H5Z"
           stroke={accent}
-          strokeWidth="9"
-        />
-        <circle cx={112} cy={58} r={5.5} fill={accent} />
-        <path
-          d={`M146 20 L146 82 M146 58 L160 42 M146 58 L162 82`}
-          fill="none"
-          stroke={color}
-          strokeWidth="9"
-          strokeLinecap="round"
+          strokeWidth="2.4"
           strokeLinejoin="round"
         />
+        <path d="M11 27V13h8M19 20h8" stroke={accent} strokeWidth="2.4" />
       </svg>
-    </div>
+      <span
+        style={{ fontSize: size * 1.25, color, letterSpacing: "-0.07em" }}
+        className="font-body font-semibold leading-none"
+      >
+        nook<span style={{ color: accent }}>.</span>
+      </span>
+    </>
+  );
+  const className =
+    "inline-flex shrink-0 items-center gap-2.5 rounded-sm select-none";
+  return onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Nook home"
+      className={className}
+    >
+      {mark}
+    </button>
+  ) : (
+    <Link href="/" aria-label="Nook home" className={className}>
+      {mark}
+    </Link>
   );
 };

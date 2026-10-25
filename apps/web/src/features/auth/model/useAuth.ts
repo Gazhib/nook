@@ -1,56 +1,77 @@
 import { loginService, registerService } from "@/services/authService";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 
 export const useAuth = () => {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [username, setUsername] = useState<string>("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [activeAuth, setActiveAuth] = useState<"signup" | "login">("login");
-
-  const router = useRouter();
+  const [activeAuth, setAuthMode] = useState<"signup" | "login">("login");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitting = useRef(false);
+  const router = useRouter();
 
-  // Dont forget to put some constraints, even though they have to be mainly in backend
+  const setActiveAuth = (mode: "signup" | "login") => {
+    if (submitting.current) return;
+    setAuthMode(mode);
+    setError(null);
+  };
 
   const handleEmail = (e: ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
+    setError(null);
   };
 
   const handlePassword = (e: ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
+    setError(null);
   };
 
   const handleUsername = (e: ChangeEvent<HTMLInputElement>) => {
     setUsername(e.target.value);
+    setError(null);
   };
 
   const handleSubmit = async () => {
-    if (username.trim().length < 5) {
-      setError("Username length can't be less than 5 characters");
-      return;
-    } else if (password.trim().length < 8) {
-      setError("Password length can't be less than 8 characters");
-      return;
-    } else if (!email.includes("@") && activeAuth === "signup") {
-      setError("Email should include @");
+    if (submitting.current) return;
+    if (!username.trim()) {
+      setError("Enter your username.");
       return;
     }
-
-    setIsSubmitting(true);
-    try {
-      if (activeAuth === "signup")
-        await registerService({ username, email, password });
-      else await loginService({ username, password });
-      router.push("/");
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred");
+    if (!password) {
+      setError("Enter your password.");
+      return;
+    }
+    if (activeAuth === "signup") {
+      if (password.length < 8) {
+        setError("Use a password with at least 8 characters.");
+        return;
       }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError("Enter a valid email address.");
+        return;
+      }
+    }
+
+    submitting.current = true;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (activeAuth === "signup") {
+        await registerService({ username, email: email.trim(), password });
+      } else {
+        await loginService({ username, password });
+      }
+      router.push("/rooms");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "We couldn’t sign you in. Please try again.",
+      );
     } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   };

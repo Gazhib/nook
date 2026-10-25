@@ -11,22 +11,28 @@ export const YJSservice = {
     doc: Doc,
     ws: WebSocket,
     awareness: awarenessProtocol.Awareness,
+    canWrite: boolean,
   ) {
     try {
       const buffers = Array.isArray(message)
         ? message
         : message instanceof ArrayBuffer
-        ? [Buffer.from(message)]
-        : [message];
+          ? [Buffer.from(message)]
+          : [message];
 
       const decoder = decoding.createDecoder(
-        new Uint8Array(Buffer.concat(buffers))
+        new Uint8Array(Buffer.concat(buffers)),
       );
       const encoder = encoding.createEncoder();
       const messageType = decoding.readVarUint(decoder);
 
-
       if (messageType === 0) {
+        if (
+          !canWrite &&
+          decoding.peekVarUint(decoder) !== syncProtocol.messageYjsSyncStep1
+        ) {
+          return;
+        }
         // sync
         encoding.writeVarUint(encoder, 0);
         syncProtocol.readSyncMessage(decoder, encoder, doc, ws);
@@ -38,7 +44,7 @@ export const YJSservice = {
         awarenessProtocol.applyAwarenessUpdate(
           awareness,
           decoding.readVarUint8Array(decoder),
-          ws
+          ws,
         );
       }
     } catch (err) {

@@ -6,7 +6,7 @@ import type {
   Transformer as KonvaTransformer,
 } from "konva/lib/shapes/Transformer";
 import { Stage } from "konva/lib/Stage";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import * as Y from "yjs";
 import { isEditableTarget } from "./isEditableTarget";
@@ -16,7 +16,7 @@ const LOCAL_ORIGIN = Symbol("local");
 export const useFurniture = (
   yFurniture: Y.Map<FurnitureItem>,
   role: Role | null,
-  getViewportCenter: (stage: Stage) => { x: number; y: number }
+  getViewportCenter: (stage: Stage) => { x: number; y: number },
 ) => {
   const [furnitures, setFurnitures] = useState<FurnitureItem[]>([]);
 
@@ -29,21 +29,25 @@ export const useFurniture = (
 
   const ydoc = yFurniture.doc;
 
-  const mutateYFurniture = (newFurniture: FurnitureItem) => {
-    if (role === "viewer" || role === null) return;
-    ydoc?.transact(() => {
-      yFurniture.set(newFurniture.id, newFurniture);
-    }, LOCAL_ORIGIN);
-  };
+  const mutateYFurniture = useCallback(
+    (newFurniture: FurnitureItem) => {
+      if (role === "viewer" || role === null) return;
+      ydoc?.transact(() => {
+        yFurniture.set(newFurniture.id, newFurniture);
+      }, LOCAL_ORIGIN);
+    },
+    [role, ydoc, yFurniture],
+  );
 
   const addFurniture = (furniture: FurnitureItem) => {
-    const { x, y } = getViewportCenter(
-      (transformRef.current as any).getStage()
-    );
-
-    furniture.position = { x, y };
-
-    const newFurniture = { ...furniture, id: crypto.randomUUID() };
+    const stage = transformRef.current?.getStage();
+    if (!stage) return;
+    const center = getViewportCenter(stage);
+    const position = {
+      x: Math.round((center.x - furniture.width / 2) / gridSize) * gridSize,
+      y: Math.round((center.y - furniture.height / 2) / gridSize) * gridSize,
+    };
+    const newFurniture = { ...furniture, position, id: crypto.randomUUID() };
     mutateYFurniture(newFurniture);
   };
 
@@ -52,21 +56,24 @@ export const useFurniture = (
     setSelectedId(id);
   };
 
-  const moveFurniture = (id: string, dx: number, dy: number) => {
-    const movedFurniture = yFurniture.get(id);
+  const moveFurniture = useCallback(
+    (id: string, dx: number, dy: number) => {
+      const movedFurniture = yFurniture.get(id);
 
-    if (!id || !movedFurniture) return;
+      if (!id || !movedFurniture) return;
 
-    const newFurniture = {
-      ...movedFurniture,
-      position: {
-        x: movedFurniture.position.x + dx,
-        y: movedFurniture.position.y + dy,
-      },
-    };
+      const newFurniture = {
+        ...movedFurniture,
+        position: {
+          x: movedFurniture.position.x + dx,
+          y: movedFurniture.position.y + dy,
+        },
+      };
 
-    mutateYFurniture(newFurniture);
-  };
+      mutateYFurniture(newFurniture);
+    },
+    [yFurniture, mutateYFurniture],
+  );
 
   const onTransformEnd = (e: KonvaEventObject<Event>) => {
     if (!selectedId) return;
@@ -75,15 +82,20 @@ export const useFurniture = (
     const node = e.target;
     if (!node) return;
 
+    const furniture = yFurniture.get(selectedId);
+    if (!furniture) return;
     const newRotation = node.rotation();
-    const newWidth = node.width() * node.scaleX();
-    const newHeight = node.height() * node.scaleY();
+    const newWidth = Math.max(gridSize, Math.abs(node.width() * node.scaleX()));
+    const newHeight = Math.max(
+      gridSize,
+      Math.abs(node.height() * node.scaleY()),
+    );
 
     const newX = Math.round(node.x() / gridSize) * gridSize;
     const newY = Math.round(node.y() / gridSize) * gridSize;
 
     const newFurniture = {
-      ...(yFurniture.get(selectedId) as FurnitureItem),
+      ...furniture,
       rotation: newRotation,
       width: newWidth,
       height: newHeight,
@@ -94,12 +106,13 @@ export const useFurniture = (
 
     node.scaleX(1);
     node.scaleY(1);
+    node.size({ width: newWidth, height: newHeight });
+    node.position({ x: newX, y: newY });
   };
 
   const dragBoundFunc = (pos: { x: number; y: number }) => {
-    const newX = Math.round(pos.x / gridSize) * gridSize;
-    const newY = Math.round(pos.y / gridSize) * gridSize;
-    return { x: newX, y: newY };
+    // Konva supplies absolute coordinates here; snap in local coordinates on drop.
+    return pos;
   };
 
   const onDragEnd = (e: KonvaEventObject<DragEvent>) => {
@@ -108,36 +121,35 @@ export const useFurniture = (
     const newY = Math.round(e.target.y() / gridSize) * gridSize;
 
     if (!selectedId) return;
+    const furniture = yFurniture.get(selectedId);
+    if (!furniture) return;
 
     const newFurniture = {
-      ...(yFurniture.get(selectedId) as FurnitureItem),
+      ...furniture,
       position: { x: newX, y: newY },
     };
 
     mutateYFurniture(newFurniture);
+    e.target.position({ x: newX, y: newY });
   };
 
   const transformSnapFunc = (oldBox: Box, newBox: Box) => {
-    const newX = Math.round(newBox.x / gridSize) * gridSize;
-    const newY = Math.round(newBox.y / gridSize) * gridSize;
-    const newWidth = Math.round(newBox.width / gridSize) * gridSize;
-    const newHeight = Math.round(newBox.height / gridSize) * gridSize;
-    return {
-      ...newBox,
-      x: newX,
-      y: newY,
-      width: newWidth,
-      height: newHeight,
-    };
+    const scale = transformRef.current?.getStage()?.scaleX() ?? 1;
+    if (newBox.width < gridSize * scale || newBox.height < gridSize * scale) {
+      return oldBox;
+    }
+    return newBox;
   };
 
   useEffect(() => {
-    if (transformRef.current && selectedFurnitureRef.current) {
-      if (role === "viewer" || role === null) return;
-      transformRef.current.nodes([selectedFurnitureRef.current]);
-      transformRef.current.getLayer()?.batchDraw();
-    }
-  }, [selectedId, role]);
+    const transformer = transformRef.current;
+    if (!transformer) return;
+    const node = selectedFurnitureRef.current;
+    transformer.nodes(
+      role !== "viewer" && role !== null && selectedId && node ? [node] : [],
+    );
+    transformer.getLayer()?.batchDraw();
+  }, [selectedId, role, furnitures]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -179,7 +191,7 @@ export const useFurniture = (
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedId, role]);
+  }, [selectedId, role, ydoc, yFurniture, moveFurniture]);
 
   useEffect(() => {
     const sync = () => {
@@ -188,35 +200,44 @@ export const useFurniture = (
         newFurnitures.push(value);
       });
       setFurnitures(newFurnitures);
+      setSelectedId((id) => (id && yFurniture.has(id) ? id : null));
     };
 
     yFurniture.observe(sync);
+    sync();
 
     return () => {
       yFurniture.unobserve(sync);
     };
-  }, []);
+  }, [yFurniture]);
 
-  const undoManager = useMemo(
-    () =>
-      new Y.UndoManager(yFurniture, {
-        trackedOrigins: new Set([LOCAL_ORIGIN]),
-      }),
-    [yFurniture]
-  );
+  const undoManagerRef = useRef<Y.UndoManager | null>(null);
+
+  useEffect(() => {
+    const manager = new Y.UndoManager(yFurniture, {
+      trackedOrigins: new Set([LOCAL_ORIGIN]),
+    });
+    undoManagerRef.current = manager;
+    return () => {
+      manager.destroy();
+      if (undoManagerRef.current === manager) undoManagerRef.current = null;
+    };
+  }, [yFurniture]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && (e.key === "z" || e.key === "Z")) {
-        if (role === "viewer" || role === null) return;
-        undoManager.undo();
-      } else if (e.ctrlKey && (e.key === "y" || e.key === "Y")) {
-        if (role === "viewer" || role === null) return;
-        undoManager.redo();
-      }
+      if (isEditableTarget(e.target) || role === "viewer" || role === null)
+        return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (key !== "z" && key !== "y") return;
+      e.preventDefault();
+      if (key === "y" || e.shiftKey) undoManagerRef.current?.redo();
+      else undoManagerRef.current?.undo();
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [role]);
 
   const handleClickOutside = () => {

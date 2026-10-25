@@ -12,7 +12,7 @@ app.use(
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
     maxAge: 86400,
-  })
+  }),
 );
 
 import { IncomingMessage } from "http";
@@ -35,13 +35,17 @@ import { verifyToken } from "./middleware/token";
 import { Duplex } from "stream";
 import { AppError } from "./errors";
 import { DATABASE_URL } from "./loadEnv";
+import type { Role } from "@nook/shared";
+import { assertRoomId } from "./controllers/roomControllers";
+import { registerRoomConnection } from "./ws/services/roomConnections";
+import { removeAwarenessStates } from "y-protocols/awareness";
 
 export const db = drizzle(DATABASE_URL, { schema });
 const wss = new WebSocketServer({ noServer: true });
 
 wss.on(
   "connection",
-  async (ws: WebSocket, req: IncomingMessage, userId: string) => {
+  (ws: WebSocket, req: IncomingMessage, userRole: Role, userId: string) => {
     const roomId = req.url?.slice(1).split("?")[0];
 
     if (!roomId) {
@@ -51,25 +55,36 @@ wss.on(
     const room = getDoc(roomId);
     const { doc, awareness, conns } = room;
     conns.add(ws);
-
-    const userRole = await WsRoomService.getRole(roomId, userId);
+    const unregister = registerRoomConnection(roomId, userId, ws);
+    const controlledIds = new Set<number>();
+    const trackAwareness = (
+      {
+        added,
+        updated,
+        removed,
+      }: { added: number[]; updated: number[]; removed: number[] },
+      origin: unknown,
+    ) => {
+      if (origin !== ws) return;
+      for (const id of [...added, ...updated]) controlledIds.add(id);
+      for (const id of removed) controlledIds.delete(id);
+    };
+    awareness.on("update", trackAwareness);
 
     WsRoomService.cancelEviction(room);
     WsRoomService.startSaveInterval(roomId, room);
 
-    if (userRole === null) {
-      const isPublic = await WsRoomService.getAccessibility(roomId);
-      if (!isPublic) {
-        ws.close(1008, "forbidden");
-        conns.delete(ws);
-        return;
+    ws.on("message", (message: RawData) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        YJScontroller.handleMessage(
+          message,
+          doc,
+          ws,
+          awareness,
+          userRole !== "viewer",
+        );
       }
-    }
-
-    if (userRole !== "viewer")
-      ws.on("message", (message: RawData) =>
-        YJScontroller.handleMessage(message, doc, ws, awareness)
-      );
+    });
     ws.on("error", (err) => {
       if (err.cause === "ECONNRESET") {
         console.log("Connection closed");
@@ -78,6 +93,9 @@ wss.on(
       }
     });
     ws.on("close", () => {
+      unregister();
+      awareness.off("update", trackAwareness);
+      removeAwarenessStates(awareness, [...controlledIds], ws);
       conns.delete(ws);
       if (conns.size === 0) {
         void WsRoomService.saveSnapshot(roomId, room);
@@ -95,7 +113,7 @@ wss.on(
       conns.delete(ws);
       ws.close();
     }
-  }
+  },
 );
 
 app.onError((err, c) => {
@@ -106,7 +124,7 @@ app.onError((err, c) => {
     if (!err.expose) console.error(err);
     return c.json(
       { error: err.expose ? err.message : "Internal server error" },
-      err.status as ContentfulStatusCode
+      err.status as ContentfulStatusCode,
     );
   }
 
@@ -137,10 +155,11 @@ server.on(
 
     const cookieHeader = req.headers.cookie;
     const token = Object.fromEntries(
-      (cookieHeader ?? "").split(";").map((c) => c.trim().split("="))
+      (cookieHeader ?? "").split(";").map((c) => c.trim().split("=")),
     ).access_token;
 
     let userId;
+    let userRole: Role;
 
     try {
       userId = await verifyToken(token);
@@ -150,8 +169,17 @@ server.on(
       return;
     }
 
+    try {
+      assertRoomId(roomId);
+      userRole = await WsRoomService.getRole(roomId, userId);
+    } catch {
+      socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
     wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit("connection", ws, req, userId);
+      wss.emit("connection", ws, req, userRole, userId);
     });
-  }
+  },
 );
